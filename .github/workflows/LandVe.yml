@@ -1,4 +1,4 @@
-name: Build LandVe Kernel (KSU-Next + SUSFS)
+name: Build LandVe Kernel (KSU-Next)
 
 on:
   workflow_dispatch:
@@ -28,7 +28,7 @@ jobs:
           rm Clang-15.0.7-20260208.tar.gz
           ${{ github.workspace }}/clang/bin/clang --version
 
-      - name: Setup KSU-Next & Integrasi SUSFS
+      - name: Setup KSU-Next
         run: |
           curl -LSs "https://raw.githubusercontent.com/Sorayukii/KernelSU-Next/stable/kernel/setup.sh" | bash -s hookless
           mkdir -p drivers/input/touchscreen/mediatek/ft3418_i2c/include/firmware/
