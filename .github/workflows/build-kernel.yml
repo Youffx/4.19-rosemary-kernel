@@ -18,19 +18,19 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update -y
-          [span_1](start_span)sudo apt-get install -y bc bison build-essential ccache curl flex git gnupg gperf libelf-dev liblz4-tool libncurses5-dev libssl-dev lzop rsync zip zlib1g-dev[span_1](end_span)
+          sudo apt-get install -y bc bison build-essential ccache curl flex git gnupg gperf libelf-dev liblz4-tool libncurses5-dev libssl-dev lzop rsync zip zlib1g-dev[span_1](end_span)
 
       - name: Setup Clang ZyCromerZ
         run: |
-          [span_2](start_span)mkdir -p ${{ github.workspace }}/clang[span_2](end_span)
-          [span_3](start_span)wget -q https://github.com/ZyCromerZ/Clang/releases/download/15.0.7-20260208-release/Clang-15.0.7-20260208.tar.gz[span_3](end_span)
-          [span_4](start_span)tar -xf Clang-15.0.7-20260208.tar.gz -C ${{ github.workspace }}/clang[span_4](end_span)
-          [span_5](start_span)rm Clang-15.0.7-20260208.tar.gz[span_5](end_span)
-          [span_6](start_span)${{ github.workspace }}/clang/bin/clang --version[span_6](end_span)
+          mkdir -p ${{ github.workspace }}/clang[span_2](end_span)
+          wget -q https://github.com/ZyCromerZ/Clang/releases/download/15.0.7-20260208-release/Clang-15.0.7-20260208.tar.gz[span_3](end_span)
+          tar -xf Clang-15.0.7-20260208.tar.gz -C ${{ github.workspace }}/clang[span_4](end_span)
+          rm Clang-15.0.7-20260208.tar.gz[span_5](end_span)
+          ${{ github.workspace }}/clang/bin/clang --version[span_6](end_span)
 
       - name: Setup KSU-Next & Integrasi SUSFS
         run: |
-          [span_7](start_span)curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -[span_7](end_span)
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -[span_7](end_span)
           git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git ../susfs4ksu
           cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch KernelSU/
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch .
@@ -43,41 +43,41 @@ jobs:
 
       - name: Modifikasi Defconfig
         run: |
-          [span_8](start_span)DEFCONFIG="arch/arm64/configs/rosemary_defconfig"[span_8](end_span)
-          [span_9](start_span)sed -i '/CONFIG_KSU/d' $DEFCONFIG[span_9](end_span)
-          [span_10](start_span)sed -i '/CONFIG_KSU_MANUAL_HOOK/d' $DEFCONFIG[span_10](end_span)
+          DEFCONFIG="arch/arm64/configs/rosemary_defconfig"[span_8](end_span)
+          sed -i '/CONFIG_KSU/d' $DEFCONFIG[span_9](end_span)
+          sed -i '/CONFIG_KSU_MANUAL_HOOK/d' $DEFCONFIG[span_10](end_span)
           sed -i '/CONFIG_KSU_SUSFS/d' $DEFCONFIG
-          [span_11](start_span)sed -i '/CONFIG_EROFS_FS/d' $DEFCONFIG[span_11](end_span)
-          [span_12](start_span)sed -i '/CONFIG_LOCALVERSION/d' $DEFCONFIG[span_12](end_span)
+          sed -i '/CONFIG_EROFS_FS/d' $DEFCONFIG[span_11](end_span)
+          sed -i '/CONFIG_LOCALVERSION/d' $DEFCONFIG[span_12](end_span)
           {
-            [span_13](start_span)echo "CONFIG_KSU=y"[span_13](end_span)
+            echo "CONFIG_KSU=y"[span_13](end_span)
             echo "CONFIG_KSU_SUSFS=y"
             echo "CONFIG_KSU_SUSFS_SUS_PATH=y"
             echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y"
             echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y"
             echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=y"
-            [span_14](start_span)echo "CONFIG_EROFS_FS=y"[span_14](end_span)
-            [span_15](start_span)echo "CONFIG_EROFS_FS_ZIP=y"[span_15](end_span)
-            [span_16](start_span)echo "CONFIG_EROFS_FS_POSIX_ACL=y"[span_16](end_span)
-            [span_17](start_span)echo "CONFIG_EROFS_FS_SECURITY=y"[span_17](end_span)
-            [span_18](start_span)echo 'CONFIG_LOCALVERSION="-Helios"'[span_18](end_span)
-            [span_19](start_span)echo "CONFIG_LOCALVERSION_AUTO=n"[span_19](end_span)
+            echo "CONFIG_EROFS_FS=y"[span_14](end_span)
+            echo "CONFIG_EROFS_FS_ZIP=y"[span_15](end_span)
+            echo "CONFIG_EROFS_FS_POSIX_ACL=y"[span_16](end_span)
+            echo "CONFIG_EROFS_FS_SECURITY=y"[span_17](end_span)
+            echo 'CONFIG_LOCALVERSION="-Helios"'[span_18](end_span)
+            echo "CONFIG_LOCALVERSION_AUTO=n"[span_19](end_span)
           } >> $DEFCONFIG
 
       - name: Build Kernel
         run: |
-          [span_20](start_span)export PATH="${{ github.workspace }}/clang/bin:$PATH"[span_20](end_span)
-          [span_21](start_span)export ARCH=arm64[span_21](end_span)
-          [span_22](start_span)export SUBARCH=arm64[span_22](end_span)
-          [span_23](start_span)export KBUILD_BUILD_USER="Youffx"[span_23](end_span)
-          [span_24](start_span)export KBUILD_BUILD_HOST="Builder"[span_24](end_span)
-          [span_25](start_span)export KBUILD_LSB_VERSION=n[span_25](end_span)
+          export PATH="${{ github.workspace }}/clang/bin:$PATH"[span_20](end_span)
+          export ARCH=arm64[span_21](end_span)
+          export SUBARCH=arm64[span_22](end_span)
+          export KBUILD_BUILD_USER="Youffx"[span_23](end_span)
+          export KBUILD_BUILD_HOST="Builder"[span_24](end_span)
+          export KBUILD_LSB_VERSION=n[span_25](end_span)
           MAKE_FLAGS=(
-              [span_26](start_span)ARCH=arm64[span_26](end_span)
-              [span_27](start_span)CROSS_COMPILE=aarch64-linux-gnu-[span_27](end_span)
-              [span_28](start_span)CROSS_COMPILE_ARM32=arm-linux-gnueabi-[span_28](end_span)
-              [span_29](start_span)CC=clang[span_29](end_span)
-              [span_30](start_span)LD=ld.lld[span_30](end_span)
+              ARCH=arm64[span_26](end_span)
+              CROSS_COMPILE=aarch64-linux-gnu-[span_27](end_span)
+              CROSS_COMPILE_ARM32=arm-linux-gnueabi-[span_28](end_span)
+              CC=clang[span_29](end_span)
+              LD=ld.lld[span_30](end_span)
               [span_31](start_span)AR=llvm-ar[span_31](end_span)
               [span_32](start_span)NM=llvm-nm[span_32](end_span)
               [span_33](start_span)OBJCOPY=llvm-objcopy[span_33](end_span)
