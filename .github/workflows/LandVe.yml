@@ -77,11 +77,6 @@ jobs:
           )
           
           make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
-          
-          if [ -f out/include/generated/utsrelease.h ]; then
-            sed -i 's/-LandVe-Lettuce/-LandVe\xf0\x9f\xa5\xac\/Lettuce/g' out/include/generated/utsrelease.h
-          fi
-          
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}"
 
       - name: Upload Image
