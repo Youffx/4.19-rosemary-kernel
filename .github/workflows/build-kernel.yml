@@ -1,4 +1,4 @@
-Name: Build Helios Kernel (KSU-Next + SUSFS)
+name: Build Helios Kernel (KSU-Next + SUSFS)
 
 on:
   workflow_dispatch:
