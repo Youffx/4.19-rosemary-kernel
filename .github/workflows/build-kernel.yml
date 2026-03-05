@@ -34,6 +34,8 @@ jobs:
           curl -LSs "https://raw.githubusercontent.com/Sorayukii/KernelSU-Next/stable/kernel/setup.sh" | bash -s hookless
           curl -LSs "https://raw.githubusercontent.com/JackA1ltman/NonGKI_Kernel_Build_2nd/mainline/Patches/Patch/susfs_patch_to_4.19.patch" -o susfs_4.19.patch
           patch -p1 --fuzz=3 --ignore-whitespace < susfs_4.19.patch || true
+          mkdir -p drivers/input/touchscreen/mediatek/ft3418_i2c/include/firmware/
+          touch drivers/input/touchscreen/mediatek/ft3418_i2c/include/firmware/fw_sample.i
           
       - name: Modifikasi Defconfig
         run: |
