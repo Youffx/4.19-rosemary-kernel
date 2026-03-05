@@ -40,11 +40,11 @@ jobs:
       - name: Fix KernelSU-Next Compatibility for 4.19
         run: |
           sed -i '1i #include <linux/sched.h>' drivers/kernelsu/allowlist.c
-          sed -i '1i #include <linux/sched/task.h>' drivers/kernelsu/allowlist.c
-          sed -i '1i #include <linux/sched/signal.h>' drivers/kernelsu/allowlist.c
-          sed -i '1i #ifndef TWA_RESUME\n#define TWA_RESUME 1\n#endif' drivers/kernelsu/allowlist.c
-          
-          sed -i 's/TWA_RESUME/1/g' drivers/kernelsu/allowlist.c
+          sed -i '2i #include <linux/sched/task.h>' drivers/kernelsu/allowlist.c
+          sed -i '3i #include <linux/sched/signal.h>' drivers/kernelsu/allowlist.c
+          sed -i '4i #ifndef TWA_RESUME' drivers/kernelsu/allowlist.c
+          sed -i '5i #define TWA_RESUME 1' drivers/kernelsu/allowlist.c
+          sed -i '6i #endif' drivers/kernelsu/allowlist.c
           
       - name: Modifikasi Defconfig
         run: |
