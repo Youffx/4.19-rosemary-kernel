@@ -94,5 +94,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Helios-Kernel-Image
-          [span_41](start_span)path: out/arch/arm64/boot/Image.gz-dtb[span_41](end_span)
-          
+          path: out/arch/arm64/boot/Image.gz-dtb
