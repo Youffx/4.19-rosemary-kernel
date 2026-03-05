@@ -30,9 +30,12 @@ jobs:
 
       - name: Setup KSU-Next & Integrasi SUSFS
         run: |
+          run: |
           curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
           curl -LSs "https://raw.githubusercontent.com/JackA1ltman/NonGKI_Kernel_Build_2nd/mainline/Patches/Patch/susfs_patch_to_4.19.patch" -o susfs_4.19.patch
           patch -p1 --fuzz=3 --ignore-whitespace < susfs_4.19.patch || true
+          sed -i 's/#define FTS_AUTO_UPGRADE_EN.*1/#define FTS_AUTO_UPGRADE_EN          0/g' drivers/input/touchscreen/mediatek/ft3418_i2c/focaltech_config.h
+          sed -i 's/#define FTS_UPGRADE_ST_EN.*1/#define FTS_UPGRADE_ST_EN            0/g' drivers/input/touchscreen/mediatek/ft3418_i2c/focaltech_config.h
           
       - name: Modifikasi Defconfig
         run: |
