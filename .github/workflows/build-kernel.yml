@@ -34,8 +34,8 @@ jobs:
           git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git ../susfs4ksu
           cp ../susfs4ksu/kernel_patches/fs/susfs.c fs/
           cp ../susfs4ksu/kernel_patches/include/linux/susfs.h include/linux/
-          patch -p1 -d KernelSU-Next < ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch
-          patch -p1 < ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch
+          patch -p2 -d KernelSU-Next < ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch
+          patch -p1 --fuzz=3 < ../susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.19.patch
 
       - name: Modifikasi Defconfig
         run: |
