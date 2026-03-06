@@ -36,7 +36,7 @@ jobs:
 
       - name: Apply RKSU Manual Hook Patch
         run: |
-          curl -LSs "https://raw.githubusercontent.com/rksuorg/kernel_patches/raw/master/manual_hook/kernel-4.19_5.4.patch" | patch -p1
+          curl -LSs "https://raw.githubusercontent.com/rksuorg/kernel_patches/master/manual_hook/kernel-4.19_5.4.patch" | patch -p1
 
       - name: Modifikasi Defconfig
         run: |
