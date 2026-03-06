@@ -38,19 +38,20 @@ jobs:
         run: |
           DEFCONFIG="arch/arm64/configs/rosemary_defconfig"
           sed -i '/CONFIG_KSU/d' $DEFCONFIG
-          sed -i '/CONFIG_KSU_MANUAL_HOOK/d' $DEFCONFIG
-          sed -i '/CONFIG_EROFS_FS/d' $DEFCONFIG
+          sed -i '/CONFIG_KPROBES/d' $DEFCONFIG
           sed -i '/CONFIG_LOCALVERSION/d' $DEFCONFIG
-          sed -i '/CONFIG_KPROBES=y/d' $DEFCONFIG
+          sed -i '/CONFIG_EROFS_FS/d' $DEFCONFIG
+          
           {
             echo "CONFIG_KSU=y"
+            echo "CONFIG_KSU_LSM_SECURITY_HOOKS=y"
+            echo "# CONFIG_KPROBES is not set"
             echo "CONFIG_EROFS_FS=y"
             echo "CONFIG_EROFS_FS_ZIP=y"
             echo "CONFIG_EROFS_FS_POSIX_ACL=y"
             echo "CONFIG_EROFS_FS_SECURITY=y"
-            echo 'CONFIG_LOCALVERSION="-LandVe🥬/Lettuce"'
+            echo 'CONFIG_LOCALVERSION="-LandVe🥬-Lettuce"'
             echo "CONFIG_LOCALVERSION_AUTO=n"
-            echo "# CONFIG_KPROBES is not set"
           } >> $DEFCONFIG
 
       - name: Build Kernel
