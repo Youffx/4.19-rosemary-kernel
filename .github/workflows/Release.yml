@@ -3,6 +3,9 @@ name: Package Flashable Zip
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   package:
     name: Prepare Flashable Zip
@@ -28,23 +31,19 @@ jobs:
         run: |
           BUILD_WF=".github/workflows/LandVe-RKSU.yml"
           
-          DESC="### 🌵 LandVe Kernel Release\n\n"
+          DESC="### LandVe Kernel Release\n\n"
           
-          # 1. Deteksi otomatis Step Name (kecuali step standar)
           DESC+="**Workflow Steps Applied:**\n"
           STEPS=$(grep "\- name:" "$BUILD_WF" | grep -vE "Checkout|Install Dependencies|Setup Clang|Build Kernel|Upload Image" | sed 's/- name: //g' | xargs -I {} echo "- ✅ {}")
           DESC+="$STEPS\n\n"
           
-          # 2. Deteksi otomatis isi Modifikasi Defconfig
           DESC+="**Kernel Configuration (Defconfig Mod):**\n"
-          CONFIGS=$(grep -oP "CONFIG_[A-Z0-9_]+" "$BUILD_WF" | grep -v "LOCALVERSION" | sort -u | xargs -I {} echo "- `{}`")
+          CONFIGS=$(grep -oP "CONFIG_[A-Z0-9_]+" "$BUILD_WF" | grep -v "LOCALVERSION" | sort -u | xargs -I {} echo "- \`{}\`")
           DESC+="$CONFIGS\n\n"
 
-          # 3. Info Compiler & Toolchain
           COMPILER=$(grep "wget" "$BUILD_WF" | cut -d'/' -f 8)
           DESC+="**Toolchain:** \`$COMPILER\`\n"
 
-          # Persiapan Penamaan & Env
           LOCAL_VER=$(grep "echo 'CONFIG_LOCALVERSION=" "$BUILD_WF" | cut -d'"' -f2 | sed 's/^-//' | sed 's/\///g')
           DATE=$(date +"%Y%m%d-%H%M")
           ZIP_NAME="${LOCAL_VER}-RKSU-${DATE}"
