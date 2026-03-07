@@ -4,7 +4,7 @@
 ## AnyKernel setup
 # begin properties
 properties() { '
-kernel.string=OSS Kernel | ROSEMARY
+kernel.string=LandVe - Rosemary
 do.devicecheck=1
 do.modules=0
 do.systemless=1
