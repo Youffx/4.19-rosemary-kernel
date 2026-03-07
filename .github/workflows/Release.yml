@@ -31,7 +31,7 @@ jobs:
         run: |
           BUILD_WF=".github/workflows/LandVe-RKSU.yml"
           
-          DESC="### LandVe Kernel Release\n\n"
+          DESC="### 🌵 LandVe Kernel Release\n\n"
           
           DESC+="**Workflow Steps Applied:**\n"
           STEPS=$(grep "\- name:" "$BUILD_WF" | grep -vE "Checkout|Install Dependencies|Setup Clang|Build Kernel|Upload Image" | sed 's/- name: //g' | xargs -I {} echo "- ✅ {}")
@@ -41,7 +41,7 @@ jobs:
           CONFIGS=$(grep -oP "CONFIG_[A-Z0-9_]+" "$BUILD_WF" | grep -v "LOCALVERSION" | sort -u | xargs -I {} echo "- \`{}\`")
           DESC+="$CONFIGS\n\n"
 
-          COMPILER=$(grep "wget" "$BUILD_WF" | cut -d'/' -f 8)
+          COMPILER=$(grep "wget" "$BUILD_WF" | cut -d'/' -f 8 | sed 's/Clang-//;s/.tar.gz//')
           DESC+="**Toolchain:** \`$COMPILER\`\n"
 
           LOCAL_VER=$(grep "echo 'CONFIG_LOCALVERSION=" "$BUILD_WF" | cut -d'"' -f2 | sed 's/^-//' | sed 's/\///g')
@@ -64,9 +64,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.RELEASE_TAG }}
-          name: LandVe Kernel ${{ env.ZIP_FINAL_NAME }}
+          name: ${{ env.ZIP_FINAL_NAME }}
           body: ${{ env.RELEASE_NOTES }}
-          files: output/${{ env.ZIP_FINAL_NAME }}.zip
+          files: output/${{ env.ZIP_FINAL_NAME.zip }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
