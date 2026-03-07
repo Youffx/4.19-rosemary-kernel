@@ -31,7 +31,7 @@ jobs:
         run: |
           BUILD_WF=".github/workflows/LandVe-RKSU.yml"
           
-          DESC="### 🌵 LandVe Kernel Release\n\n"
+          DESC="### LandVe Kernel Release\n\n"
           
           DESC+="**Workflow Steps Applied:**\n"
           STEPS=$(grep "\- name:" "$BUILD_WF" | grep -vE "Checkout|Install Dependencies|Setup Clang|Build Kernel|Upload Image" | sed 's/- name: //g' | xargs -I {} echo "- ✅ {}")
@@ -66,7 +66,7 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           name: ${{ env.ZIP_FINAL_NAME }}
           body: ${{ env.RELEASE_NOTES }}
-          files: output/${{ env.ZIP_FINAL_NAME.zip }}
+          files: output/${{ env.ZIP_FINAL_NAME }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
