@@ -27,13 +27,20 @@ jobs:
 
       - name: Prepare and Zip Flash Folder
         run: |
+          LOCAL_VER=$(grep "echo 'CONFIG_LOCALVERSION=" .github/workflows/LandVe-RKSU.yml | cut -d'"' -f2 | sed 's/^-//' | sed 's/\///g')
+          DATE=$(date +"%Y%m%d")
+          ZIP_NAME="${LOCAL_VER}-RKSU-${DATE}.zip"
+          
           cp kernel_temp/Image.gz-dtb .github/Flash/kernels/
+          
           cd .github/Flash/
-          zip -r ../../LandVe-Flashable-Kernel.zip .
+          zip -r "../../${ZIP_NAME}" .
+          
+          echo "ZIP_FINAL_NAME=${ZIP_NAME}" >> $GITHUB_ENV
 
       - name: Upload Flashable Zip
         uses: actions/upload-artifact@v4
         with:
-          name: LandVe-Flashable-Kernel
-          path: LandVe-Flashable-Kernel.zip
+          name: ${{ env.ZIP_FINAL_NAME }}
+          path: ${{ env.ZIP_FINAL_NAME }}
           
