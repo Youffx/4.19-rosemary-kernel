@@ -1,0 +1,39 @@
+name: Package Flashable Zip
+
+on:
+  workflow_dispatch:
+
+jobs:
+  package:
+    name: Prepare Flashable Zip
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+        with:
+          repository: Youffx/4.19-rosemary-kernel
+          fetch-depth: 1
+
+      - name: Download Latest Kernel Artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: LandVe-RKSU.yml
+          name: LandVe-Image-RKSU
+          path: kernel_temp
+          check_artifacts: true
+          search_artifacts: true
+
+      - name: Prepare and Zip Flash Folder
+        run: |
+          cp kernel_temp/Image.gz-dtb .github/Flash/kernels/
+          cd .github/Flash/
+          zip -r ../../LandVe-Flashable-Kernel.zip .
+
+      - name: Upload Flashable Zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: LandVe-Flashable-Kernel
+          path: LandVe-Flashable-Kernel.zip
+          
