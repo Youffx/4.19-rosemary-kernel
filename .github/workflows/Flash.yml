@@ -40,4 +40,5 @@ jobs:
         with:
           name: ${{ env.ZIP_FINAL_NAME }}
           path: .github/Flash/
+          include-hidden-files: true
           
