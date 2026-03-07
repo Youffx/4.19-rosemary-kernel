@@ -25,16 +25,13 @@ jobs:
           check_artifacts: true
           search_artifacts: true
 
-      - name: Prepare and Zip Flash Folder
+      - name: Prepare Flash Folder
         run: |
           LOCAL_VER=$(grep "echo 'CONFIG_LOCALVERSION=" .github/workflows/LandVe-RKSU.yml | cut -d'"' -f2 | sed 's/^-//' | sed 's/\///g')
           DATE=$(date +"%Y%m%d")
-          ZIP_NAME="${LOCAL_VER}-RKSU-${DATE}.zip"
+          ZIP_NAME="${LOCAL_VER}-RKSU-${DATE}"
           
           cp kernel_temp/Image.gz-dtb .github/Flash/kernels/
-          
-          cd .github/Flash/
-          zip -r "../../${ZIP_NAME}" .
           
           echo "ZIP_FINAL_NAME=${ZIP_NAME}" >> $GITHUB_ENV
 
@@ -42,5 +39,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ZIP_FINAL_NAME }}
-          path: ${{ env.ZIP_FINAL_NAME }}
+          path: .github/Flash/
           
