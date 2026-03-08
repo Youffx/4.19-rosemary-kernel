@@ -69,7 +69,19 @@ jobs:
               with open(kernel_h, 'a') as f:
                   f.write("\n#ifndef NAME_MAX\n#define NAME_MAX 255\n#endif\n")
                   f.write("#ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif\n")
+                  f.write("#ifndef ARG_MAX\n#define ARG_MAX 131072\n#endif\n")
                   f.write("#ifndef NGROUPS_MAX\n#define NGROUPS_MAX 65536\n#endif\n")
+
+          ksu_app = 'drivers/kernelsu/app_profile.c'
+          if os.path.exists(ksu_app):
+              with open(ksu_app, 'r') as f:
+                  content = f.read()
+              # guard seccomp members access
+              content = content.replace('current->seccomp.mode = 0;', '#ifdef CONFIG_SECCOMP\n    current->seccomp.mode = 0;\n#endif')
+              content = content.replace('current->seccomp.filter = NULL;', '#ifdef CONFIG_SECCOMP\n    current->seccomp.filter = NULL;\n#endif')
+              content = content.replace('if (!!!current->seccomp.mode)', '#ifdef CONFIG_SECCOMP\n    if (!!!current->seccomp.mode)\n#else\n    if (0)\n#endif')
+              with open(ksu_app, 'w') as f:
+                  f.write(content)
           EOF
           
       - name: Install Dependencies
