@@ -24,42 +24,30 @@ jobs:
 
       - name: Fix Macro Redefinitions
         run: |
-          python3 - <<EOF
-          import os
+          MACROS=(
+            "USHRT_MAX" "SHRT_MAX" "SHRT_MIN" "INT_MAX" "INT_MIN" 
+            "UINT_MAX" "LONG_MAX" "LONG_MIN" "ULONG_MAX" 
+            "LLONG_MAX" "LLONG_MIN" "ULLONG_MAX"
+            "S8_MAX" "S8_MIN" "U8_MAX" "S16_MAX" "S16_MIN" 
+            "U16_MAX" "S32_MAX" "S32_MIN" "U32_MAX" 
+            "S64_MAX" "S64_MIN" "U64_MAX"
+          )
 
-          filepath = 'include/linux/kernel.h'
-          if os.path.exists(filepath):
-              with open(filepath, 'r') as f:
-                  lines = f.readlines()
+          FILES=(
+            "include/linux/kernel.h"
+            "include/linux/limits.h"
+            "include/vdso/limits.h"
+          )
 
-              macros = [
-                  'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
-                  'UINT_MAX', 'LONG_MAX', 'LONG_MIN', 'ULONG_MAX',
-                  'LLONG_MAX', 'LLONG_MIN', 'ULLONG_MAX',
-                  'S8_MAX', 'S8_MIN', 'U8_MAX', 'S16_MAX', 'S16_MIN',
-                  'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
-                  'S64_MAX', 'S64_MIN', 'U64_MAX'
-              ]
-
-              new_lines = []
-              for line in lines:
-                  matched = False
-                  for m in macros:
-                      if line.strip().startswith(f'#define {m}'):
-                          parts = line.split(None, 2)
-                          val = parts[2].strip() if len(parts) > 2 else ""
-                          new_lines.append(f'#ifndef {m}\n')
-                          new_lines.append(f'#define {m} {val}\n')
-                          new_lines.append(f'#endif\n')
-                          matched = True
-                          break
-                  if not matched:
-                      new_lines.append(line)
-
-              with open(filepath, 'w') as f:
-                  f.writelines(new_lines)
-          EOF
-
+          for file in "${FILES[@]}"; do
+            if [ -f "$file" ]; then
+              for macro in "${MACROS[@]}"; do
+                sed -i "/#define $macro /i #ifndef $macro" "$file"
+                sed -i "/#define $macro /a #endif" "$file"
+              done
+            fi
+          done
+          
       - name: Install Dependencies
         run: |
           sudo apt-get update -y
