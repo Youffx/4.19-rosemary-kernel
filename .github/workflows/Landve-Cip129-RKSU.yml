@@ -25,15 +25,13 @@ jobs:
       - name: Fix Macro Redefinitions
         run: |
           python3 - <<EOF
-          import os, re
-
+          import os
+          import re
           files = [
               'include/linux/kernel.h',
               'include/linux/limits.h',
-              'include/vdso/limits.h',
-              'include/uapi/linux/limits.h'
+              'include/vdso/limits.h'
           ]
-
           macros = [
               'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
               'UINT_MAX', 'LONG_MAX', 'LONG_MIN', 'ULONG_MAX',
@@ -42,32 +40,16 @@ jobs:
               'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
               'S64_MAX', 'S64_MIN', 'U64_MAX'
           ]
-
           for filepath in files:
               if os.path.exists(filepath):
                   with open(filepath, 'r') as f:
                       content = f.read()
-
                   for m in macros:
-                      pattern = r'^#define\s+' + m + r'\s+.*'
+                      pattern = r'^[ \t]*#[ \t]*define[ \t]+' + m + r'\b.*$'
                       replacement = f'#ifndef {m}\n\\g<0>\n#endif'
                       content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
-
                   with open(filepath, 'w') as f:
                       f.write(content)
-
-          # fix NAME_MAX missing in fs and relay fr
-          fix_files = ['fs/exportfs/expfs.c', 'include/linux/relay.h']
-          for f_path in fix_files:
-              if os.path.exists(f_path):
-                  with open(f_path, 'r') as f:
-                      lines = f.readlines()
-                  
-                  if '#include <linux/limits.h>\n' not in lines:
-                      lines.insert(0, '#include <linux/limits.h>\n')
-                      
-                  with open(f_path, 'w') as f:
-                      f.writelines(lines)
           EOF
           
       - name: Install Dependencies
