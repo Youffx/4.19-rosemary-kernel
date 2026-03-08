@@ -1,4 +1,4 @@
-name: Build LandVe Cip 129 (RKSU)
+name: Build LandVe Kernel (RKSU)
 
 on:
   workflow_dispatch:
@@ -21,6 +21,15 @@ jobs:
           tar -xzf linux-cip-4.19.325-cip129.tar.gz
           rsync -a linux-cip-4.19.325-cip129/ ./
           rm -rf linux-cip-4.19.325-cip129*
+
+      - name: Fix Macro Redefinitions
+        run: |
+          sed -i '/#define USHRT_MAX/d' include/linux/kernel.h
+          sed -i '/#define SHRT_MAX/d' include/linux/kernel.h
+          sed -i '/#define S16_MAX/d' include/linux/kernel.h
+          sed -i '/#define S32_MAX/d' include/linux/kernel.h
+          sed -i '/#define S16_MIN/d' include/linux/kernel.h
+          sed -i '/#define S32_MIN/d' include/linux/kernel.h
 
       - name: Install Dependencies
         run: |
@@ -64,7 +73,7 @@ jobs:
             echo "CONFIG_EROFS_FS_POSIX_ACL=y"
             echo "CONFIG_EROFS_FS_SECURITY=y"
             echo "CONFIG_SDCARD_FS=y"
-            echo 'CONFIG_LOCALVERSION="-LandVe🥬/Lettuce"'
+            echo 'CONFIG_LOCALVERSION="-LandVe🌵/Cactus"'
             echo "CONFIG_LOCALVERSION_AUTO=n"
           } >> $DEFCONFIG
 
