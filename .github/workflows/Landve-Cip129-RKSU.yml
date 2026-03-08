@@ -7,7 +7,7 @@ jobs:
   build:
     name: Build Kernel by Youffx
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout Kernel Source
         uses: actions/checkout@v4
@@ -45,61 +45,99 @@ jobs:
         run: |
           curl -LSs "https://raw.githubusercontent.com/rksuorg/kernel_patches/master/manual_hook/kernel-4.19_5.4.patch" | patch -p1
 
-      - name: Fix Headers, KernelSU Include Path, and Macro Conflicts
+      - name: Fix Macro Redefinitions and KernelSU Patch
         run: |
           python3 - <<'EOF'
           import os, re
+          
+          headers = [
+              'include/linux/kernel.h',
+              'include/linux/limits.h',
+              'include/vdso/limits.h',
+              'include/uapi/linux/limits.h',
+              'include/uapi/linux/xattr.h'
+          ]
+          macros = [
+              'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
+              'UINT_MAX', 'LONG_MAX', 'LONG_MIN', 'ULONG_MAX',
+              'LLONG_MAX', 'LLONG_MIN', 'ULLONG_MAX',
+              'S8_MAX', 'S8_MIN', 'U8_MAX', 'S16_MAX', 'S16_MIN',
+              'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
+              'S64_MAX', 'S64_MIN', 'U64_MAX',
+              'NAME_MAX', 'PATH_MAX', 'NGROUPS_MAX', 'ARG_MAX',
+              'XATTR_NAME_MAX', 'XATTR_SIZE_MAX', 'XATTR_LIST_MAX'
+          ]
+          for path in headers:
+              if os.path.exists(path):
+                  with open(path, 'r') as f:
+                      lines = f.readlines()
+                  new_lines = []
+                  for line in lines:
+                      match = None
+                      for m in macros:
+                          if re.match(r'^[ \t]*#[ \t]*define[ \t]+' + m + r'\b', line):
+                              match = m
+                              break
+                      if match:
+                          new_lines.append(f"#ifndef {match}\n")
+                          new_lines.append(line)
+                          new_lines.append("#endif\n")
+                      else:
+                          new_lines.append(line)
+                  with open(path, 'w') as f:
+                      f.writelines(new_lines)
 
-          xattr_path = 'fs/xattr.c'
-          if os.path.exists(xattr_path):
-              with open(xattr_path, 'r') as f:
+          kernel_h = 'include/linux/kernel.h'
+          if os.path.exists(kernel_h):
+              with open(kernel_h, 'a') as f:
+                  f.write("\n#ifndef NAME_MAX\n#define NAME_MAX 255\n#endif\n")
+                  f.write("#ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif\n")
+                  f.write("#ifndef ARG_MAX\n#define ARG_MAX 131072\n#endif\n")
+                  f.write("#ifndef NGROUPS_MAX\n#define NGROUPS_MAX 65536\n#endif\n")
+                  f.write("#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n")
+                  f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
+                  f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
+
+          objsec_h = 'security/selinux/include/objsec.h'
+          if os.path.exists(objsec_h):
+              with open(objsec_h, 'r') as f:
                   content = f.read()
-              defines = "\n#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n" \
-                        "#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n" \
-                        "#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n"
-              if '#include <linux/xattr.h>' not in content:
-                  content = '#include <linux/xattr.h>\n' + defines + content
-              with open(xattr_path, 'w') as f:
+              content = content.replace('#include "flask.h"', '#include <flask.h>')
+              content = content.replace('#include "av_permissions.h"', '#include <av_permissions.h>')
+              with open(objsec_h, 'w') as f:
                   f.write(content)
 
-          selinux_src = 'security/selinux/include'
-          selinux_dst = 'security/selinux'
-          if os.path.exists(selinux_src):
-              for f in ['flask.h', 'av_permissions.h']:
-                  src = os.path.join(selinux_src, f)
-                  dst = os.path.join(selinux_dst, f)
-                  if os.path.exists(src) and not os.path.exists(dst):
-                      import shutil
-                      shutil.copy2(src, dst)
+          ksu_makefile = 'drivers/kernelsu/Makefile'
+          if os.path.exists(ksu_makefile):
+              with open(ksu_makefile, 'r') as f:
+                  m_content = f.read()
+              with open(ksu_makefile, 'w') as f:
+                  f.write("ccflags-y += -I$(srctree)/security/selinux/include\n")
+                  f.write("ccflags-y += -I$(objtree)/security/selinux\n")
+                  f.write("ccflags-y += -I$(objtree)/security/selinux/include\n")
+                  f.write(m_content)
 
-          mk = 'drivers/kernelsu/Makefile'
-          if os.path.exists(mk):
-              with open(mk, 'r') as f:
+          ksu_app = 'drivers/kernelsu/app_profile.c'
+          if os.path.exists(ksu_app):
+              with open(ksu_app, 'r') as f:
                   content = f.read()
-              extra_cflags = "ccflags-y += -Isecurity/selinux -Isecurity/selinux/include\n"
-              if extra_cflags not in content:
-                  with open(mk, 'w') as f:
-                      f.write(extra_cflags + content)
-
-          app = 'drivers/kernelsu/app_profile.c'
-          if os.path.exists(app):
-              with open(app, 'r') as f:
-                  c = f.read()
-              c = re.sub(r'current->seccomp\.mode\s*=\s*0;','',c)
-              c = re.sub(r'current->seccomp\.filter\s*=\s*NULL;','',c)
-              c = re.sub(r'if\s*\(\!\!\!current->seccomp\.mode\)','if (0)',c)
-              with open(app, 'w') as f:
-                  f.write(c)
+              content = re.sub(r'current->seccomp\.mode\s*=\s*0;', '', content)
+              content = re.sub(r'current->seccomp\.filter\s*=\s*NULL;', '', content)
+              content = re.sub(r'if\s*\(\!\!\!current->seccomp\.mode\)', 'if (0)', content)
+              with open(ksu_app, 'w') as f:
+                  f.write(content)
           EOF
 
       - name: Modifikasi Defconfig
         run: |
           DEFCONFIG="arch/arm64/configs/rosemary_defconfig"
+          
           sed -i '/CONFIG_KSU/d' $DEFCONFIG
           sed -i '/CONFIG_KPROBES/d' $DEFCONFIG
           sed -i '/CONFIG_LOCALVERSION/d' $DEFCONFIG
           sed -i '/CONFIG_EROFS_FS/d' $DEFCONFIG
           sed -i '/CONFIG_SDCARD_FS/d' $DEFCONFIG
+          
           {
             echo "CONFIG_KSU=y"
             echo "CONFIG_KSU_MANUAL_HOOK=y"
@@ -109,17 +147,9 @@ jobs:
             echo "CONFIG_EROFS_FS_POSIX_ACL=y"
             echo "CONFIG_EROFS_FS_SECURITY=y"
             echo "CONFIG_SDCARD_FS=y"
-            echo 'CONFIG_LOCALVERSION="-LandVe🪴/Potted-plant"'
+            echo 'CONFIG_LOCALVERSION="-LandVe🪴/Plant"'
             echo "CONFIG_LOCALVERSION_AUTO=n"
           } >> $DEFCONFIG
-
-      - name: Fix Missing POSIX Limits
-        run: |
-          FILE=include/linux/limits.h
-          grep -q "NAME_MAX" $FILE || echo "#define NAME_MAX 255" >> $FILE
-          grep -q "PATH_MAX" $FILE || echo "#define PATH_MAX 4096" >> $FILE
-          grep -q "ARG_MAX" $FILE || echo "#define ARG_MAX 131072" >> $FILE
-          grep -q "NGROUPS_MAX" $FILE || echo "#define NGROUPS_MAX 65536" >> $FILE
 
       - name: Build Kernel
         run: |
@@ -143,9 +173,8 @@ jobs:
               CLANG_TRIPLE=aarch64-linux-gnu-
               KBUILD_BUILD_VERSION=1
           )
+          
           make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
-          make O=out "${MAKE_FLAGS[@]}" prepare
-          make O=out "${MAKE_FLAGS[@]}" scripts
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" 2> build_errors.log
 
       - name: Upload Error Log
@@ -160,4 +189,3 @@ jobs:
         with:
           name: LandVe-Image-RKSU
           path: out/arch/arm64/boot/Image.gz-dtb
-          
