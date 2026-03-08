@@ -177,7 +177,7 @@ jobs:
               KBUILD_BUILD_VERSION=1
           )
           
-          Make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
+          make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}"
 
 
