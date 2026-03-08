@@ -48,7 +48,6 @@ jobs:
               if os.path.exists(path):
                   with open(path, 'r') as f:
                       lines = f.readlines()
-                  
                   new_lines = []
                   for line in lines:
                       match = None
@@ -56,16 +55,21 @@ jobs:
                           if re.match(r'^[ \t]*#[ \t]*define[ \t]+' + m + r'\b', line):
                               match = m
                               break
-                      
                       if match:
                           new_lines.append(f"#ifndef {match}\n")
                           new_lines.append(line)
                           new_lines.append("#endif\n")
                       else:
                           new_lines.append(line)
-                          
                   with open(path, 'w') as f:
                       f.writelines(new_lines)
+
+          kernel_h = 'include/linux/kernel.h'
+          if os.path.exists(kernel_h):
+              with open(kernel_h, 'a') as f:
+                  f.write("\n#ifndef NAME_MAX\n#define NAME_MAX 255\n#endif\n")
+                  f.write("#ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif\n")
+                  f.write("#ifndef NGROUPS_MAX\n#define NGROUPS_MAX 65536\n#endif\n")
           EOF
           
       - name: Install Dependencies
