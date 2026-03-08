@@ -27,20 +27,27 @@ jobs:
           python3 - <<EOF
           import os
           import re
-          files = [
-              'include/linux/kernel.h',
-              'include/linux/limits.h',
-              'include/vdso/limits.h'
-          ]
-          macros = [
-              'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
-              'UINT_MAX', 'LONG_MAX', 'LONG_MIN', 'ULONG_MAX',
-              'LLONG_MAX', 'LLONG_MIN', 'ULLONG_MAX',
-              'S8_MAX', 'S8_MIN', 'U8_MAX', 'S16_MAX', 'S16_MIN',
-              'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
-              'S64_MAX', 'S64_MIN', 'U64_MAX'
-          ]
-          for filepath in files:
+
+          targets = {
+              'include/linux/kernel.h': [
+                  'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
+                  'UINT_MAX', 'LONG_MAX', 'LONG_MIN', 'ULONG_MAX',
+                  'LLONG_MAX', 'LLONG_MIN', 'ULLONG_MAX',
+                  'S8_MAX', 'S8_MIN', 'U8_MAX', 'S16_MAX', 'S16_MIN',
+                  'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
+                  'S64_MAX', 'S64_MIN', 'U64_MAX'
+              ],
+              'include/linux/limits.h': [
+                  'NAME_MAX', 'PATH_MAX', 'NGROUPS_MAX', 'ARG_MAX'
+              ],
+              'include/vdso/limits.h': [
+                  'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
+                  'UINT_MAX'
+              ]
+          }
+
+          # 1. Wrap existing definitions
+          for filepath, macros in targets.items():
               if os.path.exists(filepath):
                   with open(filepath, 'r') as f:
                       content = f.read()
@@ -50,23 +57,27 @@ jobs:
                       content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
                   with open(filepath, 'w') as f:
                       f.write(content)
-          injections = {
-              'fs/exportfs/expfs.c': [('NAME_MAX', '255')],
-              'include/linux/relay.h': [('NAME_MAX', '255')],
-              'fs/fat/dir.c': [('PATH_MAX', '4096')],
-              'kernel/sysctl.c': [('NGROUPS_MAX', '65536')]
-          }
-          for filepath, defs in injections.items():
-              if os.path.exists(filepath):
-                  with open(filepath, 'r') as f:
-                      content = f.read()
-                  new_defs = ""
-                  for macro, value in defs:
-                      if f'define {macro}' not in content:
-                          new_defs += f"#ifndef {macro}\n#define {macro} {value}\n#endif\n"
-                  if new_defs:
-                      with open(filepath, 'w') as f:
-                          f.write(new_defs + content)
+
+          # 2. Force define missing critical limits in limits.h
+          limits_h = 'include/linux/limits.h'
+          if os.path.exists(limits_h):
+              with open(limits_h, 'r') as f:
+                  content = f.read()
+              
+              extra_defs = ""
+              needed = {
+                  'NAME_MAX': '255',
+                  'PATH_MAX': '4096',
+                  'NGROUPS_MAX': '65536'
+              }
+              
+              for macro, val in needed.items():
+                  if macro not in content:
+                      extra_defs += f"#ifndef {macro}\n#define {macro} {val}\n#endif\n"
+              
+              if extra_defs:
+                  with open(limits_h, 'w') as f:
+                      f.write(extra_defs + content)
           EOF
           
       - name: Install Dependencies
