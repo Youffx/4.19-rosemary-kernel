@@ -35,6 +35,16 @@ jobs:
           rm Clang-15.0.7-20260208.tar.gz
           ${{ github.workspace }}/clang/bin/clang --version
 
+      - name: Setup RKSU
+        run: |
+          curl -LSs "https://raw.githubusercontent.com/rsuntk/KernelSU/main/kernel/setup.sh" | bash -s main
+          mkdir -p drivers/input/touchscreen/mediatek/ft3418_i2c/include/firmware/
+          touch drivers/input/touchscreen/mediatek/ft3418_i2c/include/firmware/fw_sample.i
+
+      - name: Apply RKSU Manual Hook Patch
+        run: |
+          curl -LSs "https://raw.githubusercontent.com/rksuorg/kernel_patches/master/manual_hook/kernel-4.19_5.4.patch" | patch -p1
+
       - name: Fix Macro Redefinitions and KernelSU Patch
         run: |
           python3 - <<'EOF'
@@ -167,8 +177,8 @@ jobs:
               KBUILD_BUILD_VERSION=1
           )
           
-          make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
-          make -j2 O=out "${MAKE_FLAGS[@]}"
+          Make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
+          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}"
 
 
       - name: Upload Image
