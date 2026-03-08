@@ -47,7 +47,7 @@ jobs:
 
       - name: Fix Macro Redefinitions and KernelSU Patch
         run: |
-          python3 - <<EOF
+          python3 - <<'EOF'
           import os, re
           
           headers = [
@@ -103,11 +103,13 @@ jobs:
           ksu_makefile = 'drivers/kernelsu/Makefile'
           if os.path.exists(ksu_makefile):
               with open(ksu_makefile, 'r') as f:
-                  lines = f.readlines()
+                  m_content = f.read()
               with open(ksu_makefile, 'w') as f:
-                  f.write("ccflags-y += -I\$(srctree)/security/selinux/include\n")
-                  f.write("ccflags-y += -I\$(objtree)/security/selinux/include\n")
-                  f.writelines(lines)
+                  f.write("ccflags-y += -I$(srctree)/security/selinux\n")
+                  f.write("ccflags-y += -I$(srctree)/security/selinux/include\n")
+                  f.write("ccflags-y += -I$(objtree)/security/selinux\n")
+                  f.write("ccflags-y += -I$(objtree)/security/selinux/include\n")
+                  f.write(m_content)
 
           ksu_app = 'drivers/kernelsu/app_profile.c'
           if os.path.exists(ksu_app):
