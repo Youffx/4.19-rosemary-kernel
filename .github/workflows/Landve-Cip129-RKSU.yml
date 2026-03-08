@@ -100,15 +100,19 @@ jobs:
                   f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
                   f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
 
+          ksu_makefile = 'drivers/kernelsu/Makefile'
+          if os.path.exists(ksu_makefile):
+              with open(ksu_makefile, 'a') as f:
+                  f.write("\nccflags-y += -I\$(srctree)/security/selinux/include\n")
+                  f.write("ccflags-y += -I\$(objtree)/security/selinux/include\n")
+
           ksu_app = 'drivers/kernelsu/app_profile.c'
           if os.path.exists(ksu_app):
               with open(ksu_app, 'r') as f:
                   content = f.read()
-              
               content = re.sub(r'current->seccomp\.mode\s*=\s*0;', '', content)
               content = re.sub(r'current->seccomp\.filter\s*=\s*NULL;', '', content)
               content = re.sub(r'if\s*\(\!\!\!current->seccomp\.mode\)', 'if (0)', content)
-              
               with open(ksu_app, 'w') as f:
                   f.write(content)
           EOF
