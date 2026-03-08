@@ -27,6 +27,7 @@ jobs:
           python3 - <<EOF
           import os
           import re
+
           files = [
               'include/linux/kernel.h',
               'include/linux/limits.h',
@@ -40,6 +41,7 @@ jobs:
               'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
               'S64_MAX', 'S64_MIN', 'U64_MAX'
           ]
+
           for filepath in files:
               if os.path.exists(filepath):
                   with open(filepath, 'r') as f:
@@ -50,6 +52,20 @@ jobs:
                       content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
                   with open(filepath, 'w') as f:
                       f.write(content)
+
+          fix_files = [
+              'fs/exportfs/expfs.c',
+              'include/linux/relay.h'
+          ]
+          inject_code = "#ifndef NAME_MAX\n#define NAME_MAX 255\n#endif\n"
+
+          for filepath in fix_files:
+              if os.path.exists(filepath):
+                  with open(filepath, 'r') as f:
+                      content = f.read()
+                  if 'NAME_MAX 255' not in content:
+                      with open(filepath, 'w') as f:
+                          f.write(inject_code + content)
           EOF
           
       - name: Install Dependencies
