@@ -1,4 +1,4 @@
-name: Build LandVe Kernel (RKSU)
+name: Build LandVe Cip 129 (RKSU)
 
 on:
   workflow_dispatch:
