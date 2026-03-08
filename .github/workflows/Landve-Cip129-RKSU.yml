@@ -144,6 +144,21 @@ jobs:
             echo "CONFIG_LOCALVERSION_AUTO=n"
           } >> $DEFCONFIG
 
+      - name: Fix NAME_MAX in limits.h
+        run: |
+          FILE=include/linux/limits.h
+          if ! grep -q "NAME_MAX" $FILE; then
+            echo '#ifndef NAME_MAX' >> $FILE
+            echo '#define NAME_MAX 255' >> $FILE
+            echo '#endif' >> $FILE
+          fi
+
+          if ! grep -q "PATH_MAX" $FILE; then
+            echo '#ifndef PATH_MAX' >> $FILE
+            echo '#define PATH_MAX 4096' >> $FILE
+            echo '#endif' >> $FILE
+          fi
+
       - name: Build Kernel
         run: |
           export PATH="${{ github.workspace }}/clang/bin:$PATH"
