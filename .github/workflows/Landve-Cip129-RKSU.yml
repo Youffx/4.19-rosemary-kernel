@@ -159,6 +159,15 @@ jobs:
             echo '#endif' >> $FILE
           fi
 
+      - name: Fix Missing POSIX Limits
+        run: |
+          FILE=include/linux/limits.h
+
+          grep -q "NAME_MAX" $FILE || echo "#define NAME_MAX 255" >> $FILE
+          grep -q "PATH_MAX" $FILE || echo "#define PATH_MAX 4096" >> $FILE
+          grep -q "ARG_MAX" $FILE || echo "#define ARG_MAX 131072" >> $FILE
+          grep -q "NGROUPS_MAX" $FILE || echo "#define NGROUPS_MAX 65536" >> $FILE
+
       - name: Build Kernel
         run: |
           export PATH="${{ github.workspace }}/clang/bin:$PATH"
