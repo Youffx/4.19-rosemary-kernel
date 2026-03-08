@@ -49,7 +49,6 @@ jobs:
         run: |
           python3 - <<'EOF'
           import os, re
-          
           headers = [
               'include/linux/kernel.h',
               'include/linux/limits.h',
@@ -86,7 +85,6 @@ jobs:
                           new_lines.append(line)
                   with open(path, 'w') as f:
                       f.writelines(new_lines)
-
           kernel_h = 'include/linux/kernel.h'
           if os.path.exists(kernel_h):
               with open(kernel_h, 'a') as f:
@@ -97,18 +95,21 @@ jobs:
                   f.write("#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n")
                   f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
                   f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
-
+          objsec_h = 'security/selinux/include/objsec.h'
+          if os.path.exists(objsec_h):
+              with open(objsec_h, 'r') as f:
+                  content = f.read()
+              content = content.replace('#include "flask.h"', '#include <flask.h>')
+              content = content.replace('#include "av_permissions.h"', '#include <av_permissions.h>')
+              with open(objsec_h, 'w') as f:
+                  f.write(content)
           ksu_makefile = 'drivers/kernelsu/Makefile'
           if os.path.exists(ksu_makefile):
               with open(ksu_makefile, 'r') as f:
                   m_content = f.read()
               with open(ksu_makefile, 'w') as f:
-                  f.write("ccflags-y += -I$(srctree)/security/selinux\n")
-                  f.write("ccflags-y += -I$(objtree)/security/selinux\n")
-                  f.write("ccflags-y += -I$(srctree)/security/selinux/include\n")
-                  f.write("ccflags-y += -I$(objtree)/security/selinux/include\n")
+                  f.write("ccflags-y += -I$(srctree)/security/selinux -I$(objtree)/security/selinux -I$(srctree)/security/selinux/include -I$(objtree)/security/selinux/include\n")
                   f.write(m_content)
-
           ksu_app = 'drivers/kernelsu/app_profile.c'
           if os.path.exists(ksu_app):
               with open(ksu_app, 'r') as f:
@@ -119,29 +120,6 @@ jobs:
               with open(ksu_app, 'w') as f:
                   f.write(content)
           EOF
-
-      - name: Modifikasi Defconfig
-        run: |
-          DEFCONFIG="arch/arm64/configs/rosemary_defconfig"
-          
-          sed -i '/CONFIG_KSU/d' $DEFCONFIG
-          sed -i '/CONFIG_KPROBES/d' $DEFCONFIG
-          sed -i '/CONFIG_LOCALVERSION/d' $DEFCONFIG
-          sed -i '/CONFIG_EROFS_FS/d' $DEFCONFIG
-          sed -i '/CONFIG_SDCARD_FS/d' $DEFCONFIG
-          
-          {
-            echo "CONFIG_KSU=y"
-            echo "CONFIG_KSU_MANUAL_HOOK=y"
-            echo "# CONFIG_KPROBES is not set"
-            echo "CONFIG_EROFS_FS=y"
-            echo "CONFIG_EROFS_FS_ZIP=y"
-            echo "CONFIG_EROFS_FS_POSIX_ACL=y"
-            echo "CONFIG_EROFS_FS_SECURITY=y"
-            echo "CONFIG_SDCARD_FS=y"
-            echo 'CONFIG_LOCALVERSION="-LandVe🪴/Plant"'
-            echo "CONFIG_LOCALVERSION_AUTO=n"
-          } >> $DEFCONFIG
 
       - name: Build Kernel
         run: |
@@ -165,10 +143,11 @@ jobs:
               CLANG_TRIPLE=aarch64-linux-gnu-
               KBUILD_BUILD_VERSION=1
           )
-          
           make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
-          make -j2 O=out "${MAKE_FLAGS[@]}" security/selinux/ || true
-          make -j2 O=out "${MAKE_FLAGS[@]}" Image.gz-dtb
+          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" prepare
+          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" scripts
+          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" security/selinux/
+          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" Image.gz-dtb
 
 
       - name: Upload Image
