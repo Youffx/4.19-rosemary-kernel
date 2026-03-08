@@ -80,9 +80,9 @@ jobs:
 
           KSU_APP="drivers/kernelsu/app_profile.c"
           if [ -f "$KSU_APP" ]; then
-            sed -i 's/current->seccomp.mode = 0;/\/\/ ksu fix/g' "$KSU_APP"
-            sed -i 's/current->seccomp.filter = NULL;/\/\/ ksu fix/g' "$KSU_APP"
-            sed -i 's/if (!!!current->seccomp.mode)/if (0) \/\/ ksu fix/g' "$KSU_APP"
+            sed -i '/seccomp\.mode = 0;/d' "$KSU_APP"
+            sed -i '/seccomp\.filter = NULL;/d' "$KSU_APP"
+            sed -i 's/if (!!!current->seccomp\.mode)/if (0)/g' "$KSU_APP"
           fi
           
       - name: Install Dependencies
