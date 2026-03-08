@@ -24,29 +24,37 @@ jobs:
 
       - name: Fix Macro Redefinitions
         run: |
-          MACROS=(
-            "USHRT_MAX" "SHRT_MAX" "SHRT_MIN" "INT_MAX" "INT_MIN" 
-            "UINT_MAX" "LONG_MAX" "LONG_MIN" "ULONG_MAX" 
-            "LLONG_MAX" "LLONG_MIN" "ULLONG_MAX"
-            "S8_MAX" "S8_MIN" "U8_MAX" "S16_MAX" "S16_MIN" 
-            "U16_MAX" "S32_MAX" "S32_MIN" "U32_MAX" 
-            "S64_MAX" "S64_MIN" "U64_MAX"
-          )
+          python3 - <<EOF
+          import os, re
 
-          FILES=(
-            "include/linux/kernel.h"
-            "include/linux/limits.h"
-            "include/vdso/limits.h"
-          )
+          files = [
+              'include/linux/kernel.h',
+              'include/linux/limits.h',
+              'include/vdso/limits.h'
+          ]
 
-          for file in "${FILES[@]}"; do
-            if [ -f "$file" ]; then
-              for macro in "${MACROS[@]}"; do
-                sed -i "/#define $macro /i #ifndef $macro" "$file"
-                sed -i "/#define $macro /a #endif" "$file"
-              done
-            fi
-          done
+          macros = [
+              'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
+              'UINT_MAX', 'LONG_MAX', 'LONG_MIN', 'ULONG_MAX',
+              'LLONG_MAX', 'LLONG_MIN', 'ULLONG_MAX',
+              'S8_MAX', 'S8_MIN', 'U8_MAX', 'S16_MAX', 'S16_MIN',
+              'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
+              'S64_MAX', 'S64_MIN', 'U64_MAX'
+          ]
+
+          for filepath in files:
+              if os.path.exists(filepath):
+                  with open(filepath, 'r') as f:
+                      content = f.read()
+
+                  for m in macros:
+                      pattern = r'#define\s+' + m + r'\s+.*'
+                      replacement = f'#ifndef {m}\n\\g<0>\n#endif'
+                      content = re.sub(f'(?m)^{pattern}', replacement, content)
+
+                  with open(filepath, 'w') as f:
+                      f.write(content)
+          EOF
           
       - name: Install Dependencies
         run: |
