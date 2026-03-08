@@ -92,6 +92,11 @@ jobs:
               with open(kernel_h, 'a') as f:
                   f.write("\n#ifndef NAME_MAX\n#define NAME_MAX 255\n#endif\n")
                   f.write("#ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif\n")
+                  f.write("#ifndef ARG_MAX\n#define ARG_MAX 131072\n#endif\n")
+                  f.write("#ifndef NGROUPS_MAX\n#define NGROUPS_MAX 65536\n#endif\n")
+                  f.write("#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n")
+                  f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
+                  f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
 
           objsec_h = 'security/selinux/include/objsec.h'
           if os.path.exists(objsec_h):
