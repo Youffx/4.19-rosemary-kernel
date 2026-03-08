@@ -98,23 +98,14 @@ jobs:
                   f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
                   f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
 
-          objsec_h = 'security/selinux/include/objsec.h'
-          if os.path.exists(objsec_h):
-              with open(objsec_h, 'r') as f:
-                  content = f.read()
-              content = content.replace('#include "flask.h"', '#include "../flask.h"')
-              content = content.replace('#include "av_permissions.h"', '#include "../av_permissions.h"')
-              with open(objsec_h, 'w') as f:
-                  f.write(content)
-
           ksu_makefile = 'drivers/kernelsu/Makefile'
           if os.path.exists(ksu_makefile):
               with open(ksu_makefile, 'r') as f:
                   m_content = f.read()
               with open(ksu_makefile, 'w') as f:
                   f.write("ccflags-y += -I$(srctree)/security/selinux\n")
-                  f.write("ccflags-y += -I$(srctree)/security/selinux/include\n")
                   f.write("ccflags-y += -I$(objtree)/security/selinux\n")
+                  f.write("ccflags-y += -I$(srctree)/security/selinux/include\n")
                   f.write("ccflags-y += -I$(objtree)/security/selinux/include\n")
                   f.write(m_content)
 
