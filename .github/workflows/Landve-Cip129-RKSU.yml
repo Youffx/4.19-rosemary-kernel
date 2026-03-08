@@ -50,14 +50,21 @@ jobs:
           python3 - <<'EOF'
           import os, re
 
-          headers = [
-              'include/linux/kernel.h',
-              'include/linux/limits.h',
-              'include/vdso/limits.h',
-              'include/uapi/linux/limits.h',
-              'include/uapi/linux/xattr.h'
-          ]
+          # Fix XATTR Missing
+          xattr_path = 'fs/xattr.c'
+          if os.path.exists(xattr_path):
+              with open(xattr_path, 'r') as f:
+                  content = f.read()
+              if '#include <linux/xattr.h>' not in content:
+                  content = '#include <linux/xattr.h>\n' + content
+              with open(xattr_path, 'w') as f:
+                  f.write(content)
 
+          # Fix Macro Conflicts
+          headers = [
+              'include/linux/kernel.h', 'include/linux/limits.h', 'include/vdso/limits.h',
+              'include/uapi/linux/limits.h', 'include/uapi/linux/xattr.h'
+          ]
           macros = [
               'USHRT_MAX','SHRT_MAX','SHRT_MIN','INT_MAX','INT_MIN',
               'UINT_MAX','LONG_MAX','LONG_MIN','ULONG_MAX',
@@ -89,27 +96,28 @@ jobs:
                   with open(path,'w') as f:
                       f.writelines(new)
 
+          # Fix flask.h include
           objsec='security/selinux/include/objsec.h'
           if os.path.exists(objsec):
               with open(objsec,'r') as f:
                   c=f.read()
-              c=c.replace('#include "flask.h"','#include <flask.h>')
-              c=c.replace('#include "av_permissions.h"','#include <av_permissions.h>')
+              c=c.replace('#include <flask.h>','#include "flask.h"')
+              c=c.replace('#include <av_permissions.h>','#include "av_permissions.h"')
               with open(objsec,'w') as f:
                   f.write(c)
 
+          # Fix Makefile path
           mk='drivers/kernelsu/Makefile'
           if os.path.exists(mk):
               with open(mk,'r') as f:
                   content=f.read()
-              prefix = """ccflags-y += -I$(srctree)/security/selinux/include
-          ccflags-y += -I$(srctree)/security/selinux
-          ccflags-y += -I$(objtree)/security/selinux
-          ccflags-y += -I$(objtree)/security/selinux/include
+              prefix = """ccflags-y += -I$(srctree)/security/selinux
+          ccflags-y += -I$(srctree)/security/selinux/include
           """
               with open(mk,'w') as f:
                   f.write(prefix + content)
 
+          # Fix app_profile
           app='drivers/kernelsu/app_profile.c'
           if os.path.exists(app):
               with open(app,'r') as f:
@@ -124,13 +132,11 @@ jobs:
       - name: Modifikasi Defconfig
         run: |
           DEFCONFIG="arch/arm64/configs/rosemary_defconfig"
-
           sed -i '/CONFIG_KSU/d' $DEFCONFIG
           sed -i '/CONFIG_KPROBES/d' $DEFCONFIG
           sed -i '/CONFIG_LOCALVERSION/d' $DEFCONFIG
           sed -i '/CONFIG_EROFS_FS/d' $DEFCONFIG
           sed -i '/CONFIG_SDCARD_FS/d' $DEFCONFIG
-
           {
             echo "CONFIG_KSU=y"
             echo "CONFIG_KSU_MANUAL_HOOK=y"
@@ -144,25 +150,9 @@ jobs:
             echo "CONFIG_LOCALVERSION_AUTO=n"
           } >> $DEFCONFIG
 
-      - name: Fix NAME_MAX in limits.h
-        run: |
-          FILE=include/linux/limits.h
-          if ! grep -q "NAME_MAX" $FILE; then
-            echo '#ifndef NAME_MAX' >> $FILE
-            echo '#define NAME_MAX 255' >> $FILE
-            echo '#endif' >> $FILE
-          fi
-
-          if ! grep -q "PATH_MAX" $FILE; then
-            echo '#ifndef PATH_MAX' >> $FILE
-            echo '#define PATH_MAX 4096' >> $FILE
-            echo '#endif' >> $FILE
-          fi
-
       - name: Fix Missing POSIX Limits
         run: |
           FILE=include/linux/limits.h
-
           grep -q "NAME_MAX" $FILE || echo "#define NAME_MAX 255" >> $FILE
           grep -q "PATH_MAX" $FILE || echo "#define PATH_MAX 4096" >> $FILE
           grep -q "ARG_MAX" $FILE || echo "#define ARG_MAX 131072" >> $FILE
@@ -176,7 +166,6 @@ jobs:
           export KBUILD_BUILD_USER="Youffx"
           export KBUILD_BUILD_HOST="Builder"
           export KBUILD_LSB_VERSION=n
-
           MAKE_FLAGS=(
               ARCH=arm64
               CROSS_COMPILE=aarch64-linux-gnu-
@@ -191,12 +180,9 @@ jobs:
               CLANG_TRIPLE=aarch64-linux-gnu-
               KBUILD_BUILD_VERSION=1
           )
-
           make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
-
           make O=out "${MAKE_FLAGS[@]}" prepare
           make O=out "${MAKE_FLAGS[@]}" scripts
-
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" 2> build_errors.log
 
       - name: Upload Error Log
@@ -211,3 +197,4 @@ jobs:
         with:
           name: LandVe-Image-RKSU
           path: out/arch/arm64/boot/Image.gz-dtb
+          
