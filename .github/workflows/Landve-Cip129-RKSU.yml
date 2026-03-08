@@ -30,7 +30,8 @@ jobs:
           files = [
               'include/linux/kernel.h',
               'include/linux/limits.h',
-              'include/vdso/limits.h'
+              'include/vdso/limits.h',
+              'include/uapi/linux/limits.h'
           ]
 
           macros = [
@@ -48,12 +49,25 @@ jobs:
                       content = f.read()
 
                   for m in macros:
-                      pattern = r'#define\s+' + m + r'\s+.*'
+                      pattern = r'^#define\s+' + m + r'\s+.*'
                       replacement = f'#ifndef {m}\n\\g<0>\n#endif'
-                      content = re.sub(f'(?m)^{pattern}', replacement, content)
+                      content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
 
                   with open(filepath, 'w') as f:
                       f.write(content)
+
+          # fix NAME_MAX missing in fs and relay fr
+          fix_files = ['fs/exportfs/expfs.c', 'include/linux/relay.h']
+          for f_path in fix_files:
+              if os.path.exists(f_path):
+                  with open(f_path, 'r') as f:
+                      lines = f.readlines()
+                  
+                  if '#include <linux/limits.h>\n' not in lines:
+                      lines.insert(0, '#include <linux/limits.h>\n')
+                      
+                  with open(f_path, 'w') as f:
+                      f.writelines(lines)
           EOF
           
       - name: Install Dependencies
