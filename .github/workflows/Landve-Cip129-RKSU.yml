@@ -168,14 +168,7 @@ jobs:
           )
           
           make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
-          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" 2> build_errors.log
-
-      - name: Upload Error Log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Build-Errors-Log
-          path: build_errors.log
+          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}"
 
       - name: Upload Image
         uses: actions/upload-artifact@v4
