@@ -45,7 +45,7 @@ jobs:
         run: |
           curl -LSs "https://raw.githubusercontent.com/rksuorg/kernel_patches/master/manual_hook/kernel-4.19_5.4.patch" | patch -p1
 
-      - name: Fix Macro Redefinitions
+      - name: Fix Macro Redefinitions and KernelSU Patch
         run: |
           python3 - <<EOF
           import os, re
@@ -102,9 +102,12 @@ jobs:
 
           ksu_makefile = 'drivers/kernelsu/Makefile'
           if os.path.exists(ksu_makefile):
-              with open(ksu_makefile, 'a') as f:
-                  f.write("\nccflags-y += -I\$(srctree)/security/selinux/include\n")
+              with open(ksu_makefile, 'r') as f:
+                  lines = f.readlines()
+              with open(ksu_makefile, 'w') as f:
+                  f.write("ccflags-y += -I\$(srctree)/security/selinux/include\n")
                   f.write("ccflags-y += -I\$(objtree)/security/selinux/include\n")
+                  f.writelines(lines)
 
           ksu_app = 'drivers/kernelsu/app_profile.c'
           if os.path.exists(ksu_app):
@@ -116,7 +119,7 @@ jobs:
               with open(ksu_app, 'w') as f:
                   f.write(content)
           EOF
-          
+
       - name: Modifikasi Defconfig
         run: |
           DEFCONFIG="arch/arm64/configs/rosemary_defconfig"
