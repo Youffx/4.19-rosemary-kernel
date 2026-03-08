@@ -24,19 +24,41 @@ jobs:
 
       - name: Fix Macro Redefinitions
         run: |
-          sed -i '/#define USHRT_MAX/d' include/linux/kernel.h
-          sed -i '/#define SHRT_MAX/d' include/linux/kernel.h
-          sed -i '/#define S16_MAX/d' include/linux/kernel.h
-          sed -i '/#define S32_MAX/d' include/linux/kernel.h
-          sed -i '/#define S16_MIN/d' include/linux/kernel.h
-          sed -i '/#define S32_MIN/d' include/linux/kernel.h
-          sed -i '/#define SHRT_MIN/d' include/linux/kernel.h
-          sed -i '/#define INT_MAX/d' include/linux/kernel.h
-          sed -i '/#define LONG_MAX/d' include/linux/kernel.h
-          sed -i '/#define LLONG_MAX/d' include/linux/kernel.h
-          sed -i '/#define S8_MAX/d' include/linux/kernel.h
-          sed -i '/#define S64_MAX/d' include/linux/kernel.h
-          sed -i '/#define SHRT_MIN/d' include/linux/kernel.h
+          python3 - <<EOF
+          import os
+
+          filepath = 'include/linux/kernel.h'
+          if os.path.exists(filepath):
+              with open(filepath, 'r') as f:
+                  lines = f.readlines()
+
+              macros = [
+                  'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
+                  'UINT_MAX', 'LONG_MAX', 'LONG_MIN', 'ULONG_MAX',
+                  'LLONG_MAX', 'LLONG_MIN', 'ULLONG_MAX',
+                  'S8_MAX', 'S8_MIN', 'U8_MAX', 'S16_MAX', 'S16_MIN',
+                  'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
+                  'S64_MAX', 'S64_MIN', 'U64_MAX'
+              ]
+
+              new_lines = []
+              for line in lines:
+                  matched = False
+                  for m in macros:
+                      if line.strip().startswith(f'#define {m}'):
+                          parts = line.split(None, 2)
+                          val = parts[2].strip() if len(parts) > 2 else ""
+                          new_lines.append(f'#ifndef {m}\n')
+                          new_lines.append(f'#define {m} {val}\n')
+                          new_lines.append(f'#endif\n')
+                          matched = True
+                          break
+                  if not matched:
+                      new_lines.append(line)
+
+              with open(filepath, 'w') as f:
+                  f.writelines(new_lines)
+          EOF
 
       - name: Install Dependencies
         run: |
