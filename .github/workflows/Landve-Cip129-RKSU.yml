@@ -168,7 +168,8 @@ jobs:
           )
           
           make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
-          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}"
+          make -j2 O=out "${MAKE_FLAGS[@]}"
+
 
       - name: Upload Image
         uses: actions/upload-artifact@v4
