@@ -76,14 +76,19 @@ jobs:
                   f.write("#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n")
                   f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
                   f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
-          EOF
 
-          KSU_APP="drivers/kernelsu/app_profile.c"
-          if [ -f "$KSU_APP" ]; then
-            sed -i '/seccomp\.mode = 0;/d' "$KSU_APP"
-            sed -i '/seccomp\.filter = NULL;/d' "$KSU_APP"
-            sed -i 's/if (!!!current->seccomp\.mode)/if (0)/g' "$KSU_APP"
-          fi
+          ksu_app = 'drivers/kernelsu/app_profile.c'
+          if os.path.exists(ksu_app):
+              with open(ksu_app, 'r') as f:
+                  content = f.read()
+              
+              content = re.sub(r'current->seccomp\.mode\s*=\s*0;', '', content)
+              content = re.sub(r'current->seccomp\.filter\s*=\s*NULL;', '', content)
+              content = re.sub(r'if\s*\(\!\!\!current->seccomp\.mode\)', 'if (0)', content)
+              
+              with open(ksu_app, 'w') as f:
+                  f.write(content)
+          EOF
           
       - name: Install Dependencies
         run: |
