@@ -25,59 +25,47 @@ jobs:
       - name: Fix Macro Redefinitions
         run: |
           python3 - <<EOF
-          import os
-          import re
-
-          targets = {
-              'include/linux/kernel.h': [
-                  'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
-                  'UINT_MAX', 'LONG_MAX', 'LONG_MIN', 'ULONG_MAX',
-                  'LLONG_MAX', 'LLONG_MIN', 'ULLONG_MAX',
-                  'S8_MAX', 'S8_MIN', 'U8_MAX', 'S16_MAX', 'S16_MIN',
-                  'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
-                  'S64_MAX', 'S64_MIN', 'U64_MAX'
-              ],
-              'include/linux/limits.h': [
-                  'NAME_MAX', 'PATH_MAX', 'NGROUPS_MAX', 'ARG_MAX'
-              ],
-              'include/vdso/limits.h': [
-                  'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
-                  'UINT_MAX'
-              ]
-          }
-
-          # 1. Wrap existing definitions
-          for filepath, macros in targets.items():
-              if os.path.exists(filepath):
-                  with open(filepath, 'r') as f:
-                      content = f.read()
-                  for m in macros:
-                      pattern = r'^[ \t]*#[ \t]*define[ \t]+' + m + r'\b.*$'
-                      replacement = f'#ifndef {m}\n\\g<0>\n#endif'
-                      content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
-                  with open(filepath, 'w') as f:
-                      f.write(content)
-
-          # 2. Force define missing critical limits in limits.h
-          limits_h = 'include/linux/limits.h'
-          if os.path.exists(limits_h):
-              with open(limits_h, 'r') as f:
-                  content = f.read()
-              
-              extra_defs = ""
-              needed = {
-                  'NAME_MAX': '255',
-                  'PATH_MAX': '4096',
-                  'NGROUPS_MAX': '65536'
-              }
-              
-              for macro, val in needed.items():
-                  if macro not in content:
-                      extra_defs += f"#ifndef {macro}\n#define {macro} {val}\n#endif\n"
-              
-              if extra_defs:
-                  with open(limits_h, 'w') as f:
-                      f.write(extra_defs + content)
+          import os, re
+          
+          headers = [
+              'include/linux/kernel.h',
+              'include/linux/limits.h',
+              'include/vdso/limits.h',
+              'include/uapi/linux/limits.h'
+          ]
+          
+          macros = [
+              'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
+              'UINT_MAX', 'LONG_MAX', 'LONG_MIN', 'ULONG_MAX',
+              'LLONG_MAX', 'LLONG_MIN', 'ULLONG_MAX',
+              'S8_MAX', 'S8_MIN', 'U8_MAX', 'S16_MAX', 'S16_MIN',
+              'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
+              'S64_MAX', 'S64_MIN', 'U64_MAX',
+              'NAME_MAX', 'PATH_MAX', 'NGROUPS_MAX', 'ARG_MAX'
+          ]
+          
+          for path in headers:
+              if os.path.exists(path):
+                  with open(path, 'r') as f:
+                      lines = f.readlines()
+                  
+                  new_lines = []
+                  for line in lines:
+                      match = None
+                      for m in macros:
+                          if re.match(r'^[ \t]*#[ \t]*define[ \t]+' + m + r'\b', line):
+                              match = m
+                              break
+                      
+                      if match:
+                          new_lines.append(f"#ifndef {match}\n")
+                          new_lines.append(line)
+                          new_lines.append("#endif\n")
+                      else:
+                          new_lines.append(line)
+                          
+                  with open(path, 'w') as f:
+                      f.writelines(new_lines)
           EOF
           
       - name: Install Dependencies
