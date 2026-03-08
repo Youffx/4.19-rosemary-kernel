@@ -1,0 +1,58 @@
+name: Scan Kernel Source Status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  scan:
+    name: Scan Kernel Source
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+        with:
+          repository: Youffx/4.19-rosemary-kernel
+          fetch-depth: 1
+
+      - name: Run Source Scanner
+        run: |
+          echo "=== SCAN START ==="
+          
+          echo "--- 1. Checking KernelSU Makefile ---"
+          if [ -f drivers/kernelsu/Makefile ]; then
+            head -n 20 drivers/kernelsu/Makefile
+          else
+            echo "File not found"
+          fi
+          
+          echo "--- 2. Checking objsec.h ---"
+          if [ -f security/selinux/include/objsec.h ]; then
+            grep -E "flask.h|av_permissions.h" security/selinux/include/objsec.h || echo "Include lines not found"
+          else
+            echo "File not found"
+          fi
+          
+          echo "--- 3. Checking XATTR Constants ---"
+          echo "Checking include/uapi/linux/xattr.h:"
+          grep -E "XATTR_NAME_MAX|XATTR_SIZE_MAX|XATTR_LIST_MAX" include/uapi/linux/xattr.h || echo "XATTR constants not found in xattr.h"
+          echo "Checking include/linux/limits.h:"
+          grep -E "XATTR_NAME_MAX|XATTR_SIZE_MAX|XATTR_LIST_MAX" include/linux/limits.h || echo "XATTR constants not found in limits.h"
+          
+          echo "--- 4. Checking app_profile.c ---"
+          if [ -f drivers/kernelsu/app_profile.c ]; then
+            grep -E "seccomp.mode|seccomp.filter" drivers/kernelsu/app_profile.c || echo "seccomp patterns not found"
+          else
+            echo "File not found"
+          fi
+          
+          echo "--- 5. Checking Defconfig Status ---"
+          DEFCONFIG="arch/arm64/configs/rosemary_defconfig"
+          if [ -f "$DEFCONFIG" ]; then
+            grep -E "CONFIG_KSU|CONFIG_KPROBES|CONFIG_EROFS_FS|CONFIG_SDCARD_FS" "$DEFCONFIG"
+          else
+            echo "Defconfig not found"
+          fi
+          
+          echo "=== SCAN END ==="
+
