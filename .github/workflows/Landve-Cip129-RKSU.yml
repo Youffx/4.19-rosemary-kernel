@@ -30,6 +30,13 @@ jobs:
           sed -i '/#define S32_MAX/d' include/linux/kernel.h
           sed -i '/#define S16_MIN/d' include/linux/kernel.h
           sed -i '/#define S32_MIN/d' include/linux/kernel.h
+          sed -i '/#define SHRT_MIN/d' include/linux/kernel.h
+          sed -i '/#define INT_MAX/d' include/linux/kernel.h
+          sed -i '/#define LONG_MAX/d' include/linux/kernel.h
+          sed -i '/#define LLONG_MAX/d' include/linux/kernel.h
+          sed -i '/#define S8_MAX/d' include/linux/kernel.h
+          sed -i '/#define S64_MAX/d' include/linux/kernel.h
+          sed -i '/#define SHRT_MIN/d' include/linux/kernel.h
 
       - name: Install Dependencies
         run: |
