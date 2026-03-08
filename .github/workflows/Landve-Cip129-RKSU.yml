@@ -167,7 +167,8 @@ jobs:
           )
           
           make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
-          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}"
+          make -j2 O=out "${MAKE_FLAGS[@]}" security/selinux/ || true
+          make -j2 O=out "${MAKE_FLAGS[@]}" Image.gz-dtb
 
 
       - name: Upload Image
