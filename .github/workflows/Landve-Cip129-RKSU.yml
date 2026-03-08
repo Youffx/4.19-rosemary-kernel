@@ -31,7 +31,8 @@ jobs:
               'include/linux/kernel.h',
               'include/linux/limits.h',
               'include/vdso/limits.h',
-              'include/uapi/linux/limits.h'
+              'include/uapi/linux/limits.h',
+              'include/uapi/linux/xattr.h'
           ]
           
           macros = [
@@ -41,7 +42,8 @@ jobs:
               'S8_MAX', 'S8_MIN', 'U8_MAX', 'S16_MAX', 'S16_MIN',
               'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
               'S64_MAX', 'S64_MIN', 'U64_MAX',
-              'NAME_MAX', 'PATH_MAX', 'NGROUPS_MAX', 'ARG_MAX'
+              'NAME_MAX', 'PATH_MAX', 'NGROUPS_MAX', 'ARG_MAX',
+              'XATTR_NAME_MAX', 'XATTR_SIZE_MAX', 'XATTR_LIST_MAX'
           ]
           
           for path in headers:
@@ -71,17 +73,26 @@ jobs:
                   f.write("#ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif\n")
                   f.write("#ifndef ARG_MAX\n#define ARG_MAX 131072\n#endif\n")
                   f.write("#ifndef NGROUPS_MAX\n#define NGROUPS_MAX 65536\n#endif\n")
+                  f.write("#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n")
+                  f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
+                  f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
 
           ksu_app = 'drivers/kernelsu/app_profile.c'
           if os.path.exists(ksu_app):
               with open(ksu_app, 'r') as f:
-                  content = f.read()
-              # guard seccomp members access
-              content = content.replace('current->seccomp.mode = 0;', '#ifdef CONFIG_SECCOMP\n    current->seccomp.mode = 0;\n#endif')
-              content = content.replace('current->seccomp.filter = NULL;', '#ifdef CONFIG_SECCOMP\n    current->seccomp.filter = NULL;\n#endif')
-              content = content.replace('if (!!!current->seccomp.mode)', '#ifdef CONFIG_SECCOMP\n    if (!!!current->seccomp.mode)\n#else\n    if (0)\n#endif')
+                  lines = f.readlines()
+              new_ksu = []
+              for line in lines:
+                  if 'current->seccomp.mode =' in line:
+                      new_ksu.append("#ifdef CONFIG_SECCOMP\n" + line + "#endif\n")
+                  elif 'current->seccomp.filter =' in line:
+                      new_ksu.append("#ifdef CONFIG_SECCOMP\n" + line + "#endif\n")
+                  elif 'if (!!!current->seccomp.mode)' in line:
+                      new_ksu.append("#if defined(CONFIG_SECCOMP)\n" + line + "#else\nif (0)\n#endif\n")
+                  else:
+                      new_ksu.append(line)
               with open(ksu_app, 'w') as f:
-                  f.write(content)
+                  f.writelines(new_ksu)
           EOF
           
       - name: Install Dependencies
