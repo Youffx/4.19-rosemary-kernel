@@ -47,7 +47,6 @@ jobs:
 
       - name: Fix Macro Redefinitions and KernelSU Patch
         run: |
-          python3 - <<EOF
           python3 - <<'EOF'
           import os, re
           
@@ -89,6 +88,7 @@ jobs:
                           new_lines.append(line)
                   with open(path, 'w') as f:
                       f.writelines(new_lines)
+
           kernel_h = 'include/linux/kernel.h'
           if os.path.exists(kernel_h):
               with open(kernel_h, 'a') as f:
@@ -99,20 +99,20 @@ jobs:
                   f.write("#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n")
                   f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
                   f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
+
           ksu_makefile = 'drivers/kernelsu/Makefile'
           if os.path.exists(ksu_makefile):
               with open(ksu_makefile, 'r') as f:
-                  lines = f.readlines()
                   m_content = f.read()
               with open(ksu_makefile, 'w') as f:
-                  f.write("ccflags-y += -I\$(srctree)/security/selinux/include\n")
-                  f.write("ccflags-y += -I\$(objtree)/security/selinux/include\n")
-                  f.writelines(lines)
-                  f.write("ccflags-y += -I$(srctree)/security/selinux\n")
+                  f.write("ccflags-y += -I$(srctree)/security/selinux/include\n")
+                  f.write("ccflags-y += -I$(objtree)/security/selinux/include\n")
+                  f.write(m_content)
+                  f.write("\nccflags-y += -I$(srctree)/security/selinux\n")
                   f.write("ccflags-y += -I$(srctree)/security/selinux/include\n")
                   f.write("ccflags-y += -I$(objtree)/security/selinux\n")
                   f.write("ccflags-y += -I$(objtree)/security/selinux/include\n")
-                  f.write(m_content)
+
           ksu_app = 'drivers/kernelsu/app_profile.c'
           if os.path.exists(ksu_app):
               with open(ksu_app, 'r') as f:
