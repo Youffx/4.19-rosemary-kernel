@@ -255,6 +255,7 @@ int ebitmap_get_bit(struct ebitmap *e, unsigned long bit)
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(ebitmap_get_bit);
 
 int ebitmap_set_bit(struct ebitmap *e, unsigned long bit, int value)
 {
