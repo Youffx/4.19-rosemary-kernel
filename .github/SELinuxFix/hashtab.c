@@ -76,6 +76,7 @@ int hashtab_insert(struct hashtab *h, void *key, void *datum)
 	h->nel++;
 	return 0;
 }
+EXPORT_SYMBOL_GPL(hashtab_insert);
 
 void *hashtab_search(struct hashtab *h, const void *key)
 {
@@ -95,6 +96,7 @@ void *hashtab_search(struct hashtab *h, const void *key)
 
 	return cur->datum;
 }
+EXPORT_SYMBOL_GPL(hashtab_search);
 
 void hashtab_destroy(struct hashtab *h)
 {
