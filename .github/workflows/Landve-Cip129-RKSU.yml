@@ -102,7 +102,7 @@ jobs:
               with open(ksu_makefile, 'r') as f:
                   m_content = f.read()
               with open(ksu_makefile, 'w') as f:
-                  f.write("ccflags-y += -I$(srctree)/security/selinux/include -Isecurity/selinux/include -I$(srctree)/security/selinux -Isecurity/selinux\n")
+                  f.write("ccflags-y += -I$(srctree)/security/selinux/include -I$(srctree)/security/selinux\n")
                   f.write(m_content)
           
           ksu_app = 'drivers/kernelsu/app_profile.c'
@@ -139,20 +139,14 @@ jobs:
               KBUILD_BUILD_VERSION=1
           )
           
-          make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
-          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" prepare
-          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" scripts
-          
-          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" security/selinux/ || true
-          
-          mkdir -p security/selinux/include/
-          find out/security/selinux -name "flask.h" -exec cp {} security/selinux/include/ \; || true
-          find out/security/selinux -name "av_permissions.h" -exec cp {} security/selinux/include/ \; || true
-          
-          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" Image.gz-dtb
+          make "${MAKE_FLAGS[@]}" rosemary_defconfig
+          make -j$(nproc --all) "${MAKE_FLAGS[@]}" prepare
+          make -j$(nproc --all) "${MAKE_FLAGS[@]}" scripts
+          make -j$(nproc --all) "${MAKE_FLAGS[@]}" Image.gz-dtb
 
       - name: Upload Image
         uses: actions/upload-artifact@v4
         with:
           name: LandVe-Image-RKSU
-          path: out/arch/arm64/boot/Image.gz-dtb
+          path: arch/arm64/boot/Image.gz-dtb
+          
