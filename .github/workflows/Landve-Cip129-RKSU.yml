@@ -86,6 +86,14 @@ jobs:
                   with open(path, 'w') as f:
                       f.writelines(new_lines)
 
+          limits_h = 'include/linux/limits.h'
+          if os.path.exists(limits_h):
+              with open(limits_h, 'a') as f:
+                  f.write("\n#ifndef NAME_MAX\n#define NAME_MAX 255\n#endif\n")
+                  f.write("#ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif\n")
+                  f.write("#ifndef ARG_MAX\n#define ARG_MAX 131072\n#endif\n")
+                  f.write("#ifndef NGROUPS_MAX\n#define NGROUPS_MAX 65536\n#endif\n")
+
           ksu_makefile = 'drivers/kernelsu/Makefile'
           if os.path.exists(ksu_makefile):
               with open(ksu_makefile, 'r') as f:
