@@ -1,4 +1,5 @@
-name: Build LandVe Kernel (RKSU)
+name: Generate flask.h
+av_permissions.h
 
 on:
   workflow_dispatch:
