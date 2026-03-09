@@ -92,6 +92,6 @@ jobs:
         with:
           name: SELinux-Headers-LandVe
           path: |
-            out/security/selinux/include/flask.h
-            out/security/selinux/include/av_permissions.h
+            out/security/selinux/flask.h
+            out/security/selinux/av_permissions.h
           
