@@ -141,19 +141,24 @@ jobs:
           sed -i '/CONFIG_LOCALVERSION/d' $DEFCONFIG
           sed -i '/CONFIG_EROFS_FS/d' $DEFCONFIG
           sed -i '/CONFIG_SDCARD_FS/d' $DEFCONFIG
+          sed -i '/CONFIG_SECURITY/d' $DEFCONFIG
           
           {
             echo "CONFIG_KSU=y"
             echo "CONFIG_KSU_MANUAL_HOOK=y"
-            echo "# CONFIG_KPROBES is not set"
             echo "CONFIG_EROFS_FS=y"
             echo "CONFIG_EROFS_FS_ZIP=y"
             echo "CONFIG_EROFS_FS_POSIX_ACL=y"
             echo "CONFIG_EROFS_FS_SECURITY=y"
             echo "CONFIG_SDCARD_FS=y"
-            echo 'CONFIG_LOCALVERSION="-LandVe🌵/Cactus"'
+            echo "CONFIG_SECURITY=y"
+            echo "CONFIG_SECURITY_NETWORK=y"
+            echo "CONFIG_SECURITY_SELINUX=y"
+            echo 'CONFIG_LOCALVERSION="-LandVe🍋‍🟩/Lime"'
             echo "CONFIG_LOCALVERSION_AUTO=n"
           } >> $DEFCONFIG
+          
+          echo "# CONFIG_KPROBES is not set" >> $DEFCONFIG
 
       - name: Build Kernel
         run: |
