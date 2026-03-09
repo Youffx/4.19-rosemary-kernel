@@ -3764,3 +3764,7 @@ int security_read_policy(struct selinux_state *state,
 	return 0;
 
 }
+EXPORT_SYMBOL_GPL(selinux_state);
+EXPORT_SYMBOL_GPL(avc_ss_reset);
+EXPORT_SYMBOL_GPL(selnl_notify_policyload);
+EXPORT_SYMBOL_GPL(selinux_status_update_policyload);
