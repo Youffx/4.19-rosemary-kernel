@@ -431,7 +431,7 @@ void ext4_unregister_sysfs(struct super_block *sb)
 		remove_proc_subtree(sb->s_id, ext4_proc_root);
 	kobject_del(&sbi->s_kobj);
 }
-
+EXPORT_SYMBOL_GPL(ext4_unregister_sysfs);
 int __init ext4_init_sysfs(void)
 {
 	int ret;
