@@ -123,30 +123,40 @@ jobs:
               with open(ksu_app, 'w') as f:
                   f.write(content)
 
-          def unstatic_and_export(file_path, symbol):
-              if not os.path.exists(file_path):
-                  return
-              with open(file_path, 'r') as f:
-                  content = f.read()
-              pattern = r'static\s+([a-zA-Z_][a-zA-Z0-9_* \s]+)\b' + re.escape(symbol) + r'\b'
-              new_content = re.sub(pattern, r'\1' + symbol, content)
-              if f"EXPORT_SYMBOL_GPL({symbol})" not in new_content:
-                  new_content += f"\nEXPORT_SYMBOL_GPL({symbol});\n"
-              with open(file_path, 'w') as f:
-                  f.write(new_content)
+          def force_export(file_paths, symbol):
+              for file_path in file_paths:
+                  if not os.path.exists(file_path):
+                      continue
+                  with open(file_path, 'r') as f:
+                      content = f.read()
+                  
+                  pattern = r'\bstatic\b(\s+[^;{]*\b' + re.escape(symbol) + r'\b)'
+                  if re.search(pattern, content):
+                      content = re.sub(pattern, r'\1', content)
+                      if f"EXPORT_SYMBOL_GPL({symbol})" not in content:
+                          content += f"\nEXPORT_SYMBOL_GPL({symbol});\n"
+                      with open(file_path, 'w') as f:
+                          f.write(content)
+                      return True
+                  elif f"\n{symbol}" in content or f" {symbol}" in content:
+                      if f"EXPORT_SYMBOL_GPL({symbol})" not in content:
+                          with open(file_path, 'a') as f:
+                              f.write(f"\nEXPORT_SYMBOL_GPL({symbol});\n")
+                      return True
+              return False
 
-          unstatic_and_export('fs/ext4/sysfs.c', 'ext4_unregister_sysfs')
-          unstatic_and_export('security/selinux/ss/hashtab.c', 'hashtab_search')
-          unstatic_and_export('security/selinux/ss/hashtab.c', 'hashtab_insert')
-          unstatic_and_export('security/selinux/ss/ebitmap.c', 'ebitmap_set_bit')
-          unstatic_and_export('security/selinux/ss/ebitmap.c', 'ebitmap_get_bit')
-          unstatic_and_export('security/selinux/ss/avtab.c', 'avtab_search_node')
-          unstatic_and_export('security/selinux/ss/avtab.c', 'avtab_search_node_next')
-          unstatic_and_export('security/selinux/ss/avtab.c', 'avtab_insert_nonunique')
-          unstatic_and_export('security/selinux/ss/services.c', 'selinux_state')
-          unstatic_and_export('security/selinux/netlink.c', 'selnl_notify_policyload')
-          unstatic_and_export('security/selinux/status.c', 'selinux_status_update_policyload')
-          unstatic_and_export('security/selinux/avc.c', 'avc_ss_reset')
+          force_export(['fs/ext4/sysfs.c'], 'ext4_unregister_sysfs')
+          force_export(['security/selinux/ss/hashtab.c'], 'hashtab_search')
+          force_export(['security/selinux/ss/hashtab.c'], 'hashtab_insert')
+          force_export(['security/selinux/ss/ebitmap.c'], 'ebitmap_set_bit')
+          force_export(['security/selinux/ss/ebitmap.c'], 'ebitmap_get_bit')
+          force_export(['security/selinux/ss/avtab.c'], 'avtab_search_node')
+          force_export(['security/selinux/ss/avtab.c'], 'avtab_search_node_next')
+          force_export(['security/selinux/ss/avtab.c'], 'avtab_insert_nonunique')
+          force_export(['security/selinux/hooks.c', 'security/selinux/ss/services.c'], 'selinux_state')
+          force_export(['security/selinux/avc.c'], 'avc_ss_reset')
+          force_export(['security/selinux/netlink.c'], 'selnl_notify_policyload')
+          force_export(['security/selinux/status.c'], 'selinux_status_update_policyload')
           EOF
 
       - name: Inject SELinux Headers
