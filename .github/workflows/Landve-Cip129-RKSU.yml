@@ -122,6 +122,27 @@ jobs:
               content = re.sub(r'if\s*\(\!\!\!current->seccomp\.mode\)', 'if (0)', content)
               with open(ksu_app, 'w') as f:
                   f.write(content)
+
+          def export_symbol(file_path, symbol):
+              if os.path.exists(file_path):
+                  with open(file_path, 'r') as f:
+                      content = f.read()
+                  if f"EXPORT_SYMBOL_GPL({symbol})" not in content:
+                      with open(file_path, 'a') as f:
+                          f.write(f"\nEXPORT_SYMBOL_GPL({symbol});\n")
+
+          export_symbol('fs/ext4/sysfs.c', 'ext4_unregister_sysfs')
+          export_symbol('security/selinux/ss/hashtab.c', 'hashtab_search')
+          export_symbol('security/selinux/ss/hashtab.c', 'hashtab_insert')
+          export_symbol('security/selinux/ss/ebitmap.c', 'ebitmap_set_bit')
+          export_symbol('security/selinux/ss/ebitmap.c', 'ebitmap_get_bit')
+          export_symbol('security/selinux/ss/avtab.c', 'avtab_search_node')
+          export_symbol('security/selinux/ss/avtab.c', 'avtab_search_node_next')
+          export_symbol('security/selinux/ss/avtab.c', 'avtab_insert_nonunique')
+          export_symbol('security/selinux/ss/services.c', 'selinux_state')
+          export_symbol('security/selinux/ss/services.c', 'selnl_notify_policyload')
+          export_symbol('security/selinux/ss/services.c', 'selinux_status_update_policyload')
+          export_symbol('security/selinux/avc.c', 'avc_ss_reset')
           EOF
 
       - name: Inject SELinux Headers
