@@ -50,46 +50,39 @@ jobs:
           python3 - <<'EOF'
           import os, re
           
-          def wrap_macros(file_path, macros):
-              if not os.path.exists(file_path): return
-              with open(file_path, 'r') as f:
-                  content = f.read()
-              for macro in macros:
-                  pattern = r'^#define\s+' + macro + r'\b.*$'
-                  replacement = f"#ifndef {macro}\n\\g<0>\n#endif"
-                  content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
-              with open(file_path, 'w') as f:
-                  f.write(content)
+          # 1. Fix missing/redefined constants in kernel.h secara aman
+          # Kita menambahkan definisi fallback tepat di bawah header guard utama
+          kernel_h = 'include/linux/kernel.h'
+          if os.path.exists(kernel_h):
+              with open(kernel_h, 'r') as f:
+                  lines = f.readlines()
+              
+              new_lines = []
+              inserted = False
+              for line in lines:
+                  new_lines.append(line)
+                  if '#define _LINUX_KERNEL_H' in line and not inserted:
+                      new_lines.append("\n/* Fallback for missing limits */\n")
+                      new_lines.append("#include <linux/limits.h>\n")
+                      new_lines.append("#ifndef NAME_MAX\n#define NAME_MAX 255\n#endif\n")
+                      new_lines.append("#ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif\n")
+                      new_lines.append("#ifndef ARG_MAX\n#define ARG_MAX 131072\n#endif\n")
+                      new_lines.append("#ifndef NGROUPS_MAX\n#define NGROUPS_MAX 65536\n#endif\n")
+                      inserted = True
+              
+              with open(kernel_h, 'w') as f:
+                  f.writelines(new_lines)
 
-          macros_to_wrap = [
-              'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
-              'UINT_MAX', 'LONG_MAX', 'LONG_MIN', 'ULONG_MAX',
-              'LLONG_MAX', 'LLONG_MIN', 'ULLONG_MAX',
-              'S8_MAX', 'S8_MIN', 'U8_MAX', 'S16_MAX', 'S16_MIN',
-              'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
-              'S64_MAX', 'S64_MIN', 'U64_MAX',
-              'NAME_MAX', 'PATH_MAX', 'NGROUPS_MAX', 'ARG_MAX',
-              'XATTR_NAME_MAX', 'XATTR_SIZE_MAX', 'XATTR_LIST_MAX'
-          ]
-          
-          files = [
-              'include/linux/kernel.h',
-              'include/linux/limits.h',
-              'include/vdso/limits.h',
-              'include/uapi/linux/limits.h',
-              'include/uapi/linux/xattr.h'
-          ]
-          
-          for f in files:
-              wrap_macros(f, macros_to_wrap)
-
+          # 2. KernelSU Makefile Fix (Include SELinux)
           ksu_makefile = 'drivers/kernelsu/Makefile'
           if os.path.exists(ksu_makefile):
               with open(ksu_makefile, 'r+') as f:
                   content = f.read()
-                  f.seek(0, 0)
-                  f.write("ccflags-y += -I$(srctree)/security/selinux -I$(srctree)/security/selinux/include\n" + content)
+                  if 'security/selinux' not in content:
+                      f.seek(0, 0)
+                      f.write("ccflags-y += -I$(srctree)/security/selinux -I$(srctree)/security/selinux/include\n" + content)
 
+          # 3. KernelSU Seccomp Fix
           ksu_app = 'drivers/kernelsu/app_profile.c'
           if os.path.exists(ksu_app):
               with open(ksu_app, 'r') as f:
@@ -100,13 +93,22 @@ jobs:
               with open(ksu_app, 'w') as f:
                   f.write(content)
 
+          # 4. Export symbols (Tanpa merusak header)
           def export_symbol(path, symbol):
               if not os.path.exists(path): return
-              with open(path, 'r') as f: content = f.read()
+              with open(path, 'r') as f:
+                  content = f.read()
+              
+              # Hilangkan 'static' agar bisa diakses modul luar (RKSU)
+              # Regex ini lebih akurat untuk mencari definisi fungsi/variabel
               content = re.sub(r'static\s+(?=[^;{]*\b' + re.escape(symbol) + r'\b)', '', content)
+              
+              # Tambahkan EXPORT_SYMBOL_GPL di akhir file jika belum ada
               if f"EXPORT_SYMBOL_GPL({symbol})" not in content:
-                  content += f"\nEXPORT_SYMBOL_GPL({symbol});\n"
-              with open(path, 'w') as f: f.write(content)
+                  content = content.strip() + f"\nEXPORT_SYMBOL_GPL({symbol});\n"
+              
+              with open(path, 'w') as f:
+                  f.write(content)
 
           symbols = [
               ('fs/ext4/sysfs.c', 'ext4_unregister_sysfs'),
@@ -123,7 +125,9 @@ jobs:
               ('security/selinux/hooks.c', 'selinux_state'),
               ('security/selinux/ss/services.c', 'selinux_state')
           ]
-          for p, s in symbols: export_symbol(p, s)
+          
+          for p, s in symbols:
+              export_symbol(p, s)
           EOF
 
       - name: Inject SELinux Headers
