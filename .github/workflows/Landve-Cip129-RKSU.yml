@@ -95,14 +95,6 @@ jobs:
                   f.write("#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n")
                   f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
                   f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
-          objsec_h = 'security/selinux/include/objsec.h'
-          if os.path.exists(objsec_h):
-              with open(objsec_h, 'r') as f:
-                  content = f.read()
-              content = content.replace('#include "flask.h"', '#include <flask.h>')
-              content = content.replace('#include "av_permissions.h"', '#include <av_permissions.h>')
-              with open(objsec_h, 'w') as f:
-                  f.write(content)
           ksu_makefile = 'drivers/kernelsu/Makefile'
           if os.path.exists(ksu_makefile):
               with open(ksu_makefile, 'r') as f:
@@ -147,8 +139,11 @@ jobs:
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" prepare
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" scripts
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" security/selinux/
+          
+          cp out/security/selinux/include/flask.h security/selinux/include/ || true
+          cp out/security/selinux/include/av_permissions.h security/selinux/include/ || true
+          
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" Image.gz-dtb
-
 
       - name: Upload Image
         uses: actions/upload-artifact@v4
