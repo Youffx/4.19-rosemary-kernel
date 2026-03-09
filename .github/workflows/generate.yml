@@ -1,5 +1,4 @@
-name: Generate flask.h
-av_permissions.h
+name: Generate flask.h and av_permissions.h
 
 on:
   workflow_dispatch:
