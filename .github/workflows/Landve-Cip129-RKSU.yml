@@ -85,6 +85,7 @@ jobs:
                           new_lines.append(line)
                   with open(path, 'w') as f:
                       f.writelines(new_lines)
+          
           kernel_h = 'include/linux/kernel.h'
           if os.path.exists(kernel_h):
               with open(kernel_h, 'a') as f:
@@ -95,13 +96,15 @@ jobs:
                   f.write("#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n")
                   f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
                   f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
+          
           ksu_makefile = 'drivers/kernelsu/Makefile'
           if os.path.exists(ksu_makefile):
               with open(ksu_makefile, 'r') as f:
                   m_content = f.read()
               with open(ksu_makefile, 'w') as f:
-                  f.write("ccflags-y += -I$(srctree)/security/selinux -I$(objtree)/security/selinux -I$(srctree)/security/selinux/include -I$(objtree)/security/selinux/include\n")
+                  f.write("ccflags-y += -I$(srctree)/security/selinux/include -Isecurity/selinux/include -I$(srctree)/security/selinux -Isecurity/selinux\n")
                   f.write(m_content)
+          
           ksu_app = 'drivers/kernelsu/app_profile.c'
           if os.path.exists(ksu_app):
               with open(ksu_app, 'r') as f:
@@ -135,13 +138,16 @@ jobs:
               CLANG_TRIPLE=aarch64-linux-gnu-
               KBUILD_BUILD_VERSION=1
           )
+          
           make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" prepare
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" scripts
-          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" security/selinux/
           
-          cp out/security/selinux/include/flask.h security/selinux/include/ || true
-          cp out/security/selinux/include/av_permissions.h security/selinux/include/ || true
+          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" security/selinux/ || true
+          
+          mkdir -p security/selinux/include/
+          find out/security/selinux -name "flask.h" -exec cp {} security/selinux/include/ \; || true
+          find out/security/selinux -name "av_permissions.h" -exec cp {} security/selinux/include/ \; || true
           
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" Image.gz-dtb
 
