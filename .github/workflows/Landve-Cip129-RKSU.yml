@@ -47,117 +47,69 @@ jobs:
 
       - name: Fix Macro Redefinitions and KernelSU Patch
         run: |
-          python3 - <<'EOF'
-          import os, re
-          
-          headers = [
-              'include/linux/kernel.h',
-              'include/linux/limits.h',
-              'include/vdso/limits.h',
-              'include/uapi/linux/limits.h',
-              'include/uapi/linux/xattr.h'
-          ]
-          
-          macros = [
-              'USHRT_MAX', 'SHRT_MAX', 'SHRT_MIN', 'INT_MAX', 'INT_MIN',
-              'UINT_MAX', 'LONG_MAX', 'LONG_MIN', 'ULONG_MAX',
-              'LLONG_MAX', 'LLONG_MIN', 'ULLONG_MAX',
-              'S8_MAX', 'S8_MIN', 'U8_MAX', 'S16_MAX', 'S16_MIN',
-              'U16_MAX', 'S32_MAX', 'S32_MIN', 'U32_MAX',
-              'S64_MAX', 'S64_MIN', 'U64_MAX',
-              'NAME_MAX', 'PATH_MAX', 'NGROUPS_MAX', 'ARG_MAX',
-              'XATTR_NAME_MAX', 'XATTR_SIZE_MAX', 'XATTR_LIST_MAX'
-          ]
-          
-          for path in headers:
-              if os.path.exists(path):
-                  with open(path, 'r') as f:
-                      lines = f.readlines()
-                  new_lines = []
-                  for line in lines:
-                      match = None
-                      for m in macros:
-                          if re.match(r'^[ \t]*#[ \t]*define[ \t]+' + m + r'\b', line):
-                              match = m
-                              break
-                      if match:
-                          new_lines.append(f"#ifndef {match}\n")
-                          new_lines.append(line)
-                          new_lines.append("#endif\n")
-                      else:
-                          new_lines.append(line)
-                  with open(path, 'w') as f:
-                      f.writelines(new_lines)
+          # 1. Fix Limits / Macros
+          for path in include/linux/kernel.h include/linux/limits.h include/vdso/limits.h include/uapi/linux/limits.h include/uapi/linux/xattr.h; do
+            if [ -f "$path" ]; then
+              sed -i 's/#define USHRT_MAX/#ifndef USHRT_MAX\n#define USHRT_MAX/g' "$path"
+              sed -i 's/#define NAME_MAX/#ifndef NAME_MAX\n#define NAME_MAX/g' "$path"
+              sed -i 's/#define PATH_MAX/#ifndef PATH_MAX\n#define PATH_MAX/g' "$path"
+              sed -i 's/#define ARG_MAX/#ifndef ARG_MAX\n#define ARG_MAX/g' "$path"
+              sed -i 's/#define NGROUPS_MAX/#ifndef NGROUPS_MAX\n#define NGROUPS_MAX/g' "$path"
+              sed -i 's/#define XATTR_NAME_MAX/#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX/g' "$path"
+              sed -i 's/#define XATTR_SIZE_MAX/#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX/g' "$path"
+              sed -i 's/#define XATTR_LIST_MAX/#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX/g' "$path"
+            fi
+          done
 
-          kernel_h = 'include/linux/kernel.h'
-          if os.path.exists(kernel_h):
-              with open(kernel_h, 'a') as f:
-                  f.write("\n#ifndef NAME_MAX\n#define NAME_MAX 255\n#endif\n")
-                  f.write("#ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif\n")
-                  f.write("#ifndef ARG_MAX\n#define ARG_MAX 131072\n#endif\n")
-                  f.write("#ifndef NGROUPS_MAX\n#define NGROUPS_MAX 65536\n#endif\n")
-                  f.write("#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n")
-                  f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
-                  f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
+          echo -e "\n#ifndef NAME_MAX\n#define NAME_MAX 255\n#endif\n#ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif\n#ifndef ARG_MAX\n#define ARG_MAX 131072\n#endif\n#ifndef NGROUPS_MAX\n#define NGROUPS_MAX 65536\n#endif\n#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n" >> include/linux/kernel.h
 
-          ksu_makefile = 'drivers/kernelsu/Makefile'
-          if os.path.exists(ksu_makefile):
-              with open(ksu_makefile, 'r') as f:
-                  m_content = f.read()
-              with open(ksu_makefile, 'w') as f:
-                  f.write("ccflags-y += -I$(srctree)/security/selinux/include\n")
-                  f.write("ccflags-y += -I$(objtree)/security/selinux/include\n")
-                  f.write(m_content)
-                  f.write("\nccflags-y += -I$(srctree)/security/selinux\n")
-                  f.write("ccflags-y += -I$(srctree)/security/selinux/include\n")
-                  f.write("ccflags-y += -I$(objtree)/security/selinux\n")
-                  f.write("ccflags-y += -I$(objtree)/security/selinux/include\n")
+          # 2. Fix KernelSU Makefile Includes
+          sed -i '1i ccflags-y += -I$(srctree)/security/selinux/include\nccflags-y += -I$(objtree)/security/selinux/include' drivers/kernelsu/Makefile
+          echo -e "\nccflags-y += -I$(srctree)/security/selinux\nccflags-y += -I$(srctree)/security/selinux/include\nccflags-y += -I$(objtree)/security/selinux\nccflags-y += -I$(objtree)/security/selinux/include" >> drivers/kernelsu/Makefile
 
-          ksu_app = 'drivers/kernelsu/app_profile.c'
-          if os.path.exists(ksu_app):
-              with open(ksu_app, 'r') as f:
-                  content = f.read()
-              content = re.sub(r'current->seccomp\.mode\s*=\s*0;', '', content)
-              content = re.sub(r'current->seccomp\.filter\s*=\s*NULL;', '', content)
-              content = re.sub(r'if\s*\(\!\!\!current->seccomp\.mode\)', 'if (0)', content)
-              with open(ksu_app, 'w') as f:
-                  f.write(content)
+          # 3. Fix KernelSU App Profile Seccomp
+          if [ -f "drivers/kernelsu/app_profile.c" ]; then
+            sed -i 's/current->seccomp.mode\s*=\s*0;//g' drivers/kernelsu/app_profile.c
+            sed -i 's/current->seccomp.filter\s*=\s*NULL;//g' drivers/kernelsu/app_profile.c
+            sed -i 's/if\s*(!!!current->seccomp.mode)/if (0)/g' drivers/kernelsu/app_profile.c
+          fi
 
-          def force_export(file_paths, symbol):
-              for file_path in file_paths:
-                  if not os.path.exists(file_path):
-                      continue
-                  with open(file_path, 'r') as f:
-                      content = f.read()
-                  
-                  pattern = r'\bstatic\b(\s+[^;{]*\b' + re.escape(symbol) + r'\b)'
-                  if re.search(pattern, content):
-                      content = re.sub(pattern, r'\1', content)
-                      if f"EXPORT_SYMBOL_GPL({symbol})" not in content:
-                          content += f"\nEXPORT_SYMBOL_GPL({symbol});\n"
-                      with open(file_path, 'w') as f:
-                          f.write(content)
-                      return True
-                  elif f"\n{symbol}" in content or f" {symbol}" in content:
-                      if f"EXPORT_SYMBOL_GPL({symbol})" not in content:
-                          with open(file_path, 'a') as f:
-                              f.write(f"\nEXPORT_SYMBOL_GPL({symbol});\n")
-                      return True
-              return False
+          # 4. Export Required Symbols (Replace Python with Bash for reliability)
+          export_symbol() {
+            local file=$1
+            local sym=$2
+            if [ -f "$file" ]; then
+              # Remove static modifier
+              sed -i "s/static void $sym/void $sym/g" "$file"
+              sed -i "s/static int $sym/int $sym/g" "$file"
+              sed -i "s/static struct avtab_node \*$sym/struct avtab_node \*$sym/g" "$file"
+              sed -i "s/static void \*$sym/void \*$sym/g" "$file"
+              # Append EXPORT_SYMBOL_GPL
+              if ! grep -q "EXPORT_SYMBOL_GPL($sym);" "$file"; then
+                echo -e "\nEXPORT_SYMBOL_GPL($sym);" >> "$file"
+              fi
+            fi
+          }
 
-          force_export(['fs/ext4/sysfs.c'], 'ext4_unregister_sysfs')
-          force_export(['security/selinux/ss/hashtab.c'], 'hashtab_search')
-          force_export(['security/selinux/ss/hashtab.c'], 'hashtab_insert')
-          force_export(['security/selinux/ss/ebitmap.c'], 'ebitmap_set_bit')
-          force_export(['security/selinux/ss/ebitmap.c'], 'ebitmap_get_bit')
-          force_export(['security/selinux/ss/avtab.c'], 'avtab_search_node')
-          force_export(['security/selinux/ss/avtab.c'], 'avtab_search_node_next')
-          force_export(['security/selinux/ss/avtab.c'], 'avtab_insert_nonunique')
-          force_export(['security/selinux/hooks.c', 'security/selinux/ss/services.c'], 'selinux_state')
-          force_export(['security/selinux/avc.c'], 'avc_ss_reset')
-          force_export(['security/selinux/netlink.c'], 'selnl_notify_policyload')
-          force_export(['security/selinux/status.c'], 'selinux_status_update_policyload')
-          EOF
+          export_symbol "fs/ext4/sysfs.c" "ext4_unregister_sysfs"
+          export_symbol "security/selinux/ss/hashtab.c" "hashtab_search"
+          export_symbol "security/selinux/ss/hashtab.c" "hashtab_insert"
+          export_symbol "security/selinux/ss/ebitmap.c" "ebitmap_set_bit"
+          export_symbol "security/selinux/ss/ebitmap.c" "ebitmap_get_bit"
+          export_symbol "security/selinux/ss/avtab.c" "avtab_search_node"
+          export_symbol "security/selinux/ss/avtab.c" "avtab_search_node_next"
+          export_symbol "security/selinux/ss/avtab.c" "avtab_insert_nonunique"
+          export_symbol "security/selinux/avc.c" "avc_ss_reset"
+          export_symbol "security/selinux/netlink.c" "selnl_notify_policyload"
+          export_symbol "security/selinux/status.c" "selinux_status_update_policyload"
+
+          # Handle selinux_state directly
+          if [ -f "security/selinux/hooks.c" ] && ! grep -q "EXPORT_SYMBOL_GPL(selinux_state);" "security/selinux/hooks.c"; then
+            echo -e "\nEXPORT_SYMBOL_GPL(selinux_state);" >> security/selinux/hooks.c
+          fi
+          if [ -f "security/selinux/ss/services.c" ] && ! grep -q "EXPORT_SYMBOL_GPL(selinux_state);" "security/selinux/ss/services.c"; then
+            echo -e "\nEXPORT_SYMBOL_GPL(selinux_state);" >> security/selinux/ss/services.c
+          fi
 
       - name: Inject SELinux Headers
         run: |
