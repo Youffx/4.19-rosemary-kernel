@@ -88,6 +88,7 @@ jobs:
                           new_lines.append(line)
                   with open(path, 'w') as f:
                       f.writelines(new_lines)
+
           kernel_h = 'include/linux/kernel.h'
           if os.path.exists(kernel_h):
               with open(kernel_h, 'a') as f:
@@ -98,6 +99,7 @@ jobs:
                   f.write("#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n")
                   f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
                   f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
+
           ksu_makefile = 'drivers/kernelsu/Makefile'
           if os.path.exists(ksu_makefile):
               with open(ksu_makefile, 'r') as f:
@@ -110,6 +112,7 @@ jobs:
                   f.write("ccflags-y += -I$(srctree)/security/selinux/include\n")
                   f.write("ccflags-y += -I$(objtree)/security/selinux\n")
                   f.write("ccflags-y += -I$(objtree)/security/selinux/include\n")
+
           ksu_app = 'drivers/kernelsu/app_profile.c'
           if os.path.exists(ksu_app):
               with open(ksu_app, 'r') as f:
@@ -119,6 +122,7 @@ jobs:
               content = re.sub(r'if\s*\(\!\!\!current->seccomp\.mode\)', 'if (0)', content)
               with open(ksu_app, 'w') as f:
                   f.write(content)
+
           def force_export(file_paths, symbol):
               for file_path in file_paths:
                   if not os.path.exists(file_path):
@@ -126,20 +130,19 @@ jobs:
                   with open(file_path, 'r') as f:
                       content = f.read()
                   
-                  pattern = r'\bstatic\b(\s+[^;{]*\b' + re.escape(symbol) + r'\b)'
+                  pattern = r'\bstatic\s+(?=(?:inline\s+)?[\w\s\*]*\b' + re.escape(symbol) + r'\b)'
                   if re.search(pattern, content):
-                      content = re.sub(pattern, r'\1', content)
-                      if f"EXPORT_SYMBOL_GPL({symbol})" not in content:
-                          content += f"\nEXPORT_SYMBOL_GPL({symbol});\n"
-                      with open(file_path, 'w') as f:
-                          f.write(content)
-                      return True
-                  elif f"\n{symbol}" in content or f" {symbol}" in content:
-                      if f"EXPORT_SYMBOL_GPL({symbol})" not in content:
-                          with open(file_path, 'a') as f:
-                              f.write(f"\nEXPORT_SYMBOL_GPL({symbol});\n")
-                      return True
-              return False
+                      content = re.sub(pattern, '', content)
+                  
+                  if f"EXPORT_SYMBOL_GPL({symbol})" not in content and f"EXPORT_SYMBOL({symbol})" not in content:
+                      content += f"\nEXPORT_SYMBOL_GPL({symbol});\n"
+                  
+                  if "#include <linux/export.h>" not in content:
+                      content = "#include <linux/export.h>\n" + content
+                      
+                  with open(file_path, 'w') as f:
+                      f.write(content)
+
           force_export(['fs/ext4/sysfs.c'], 'ext4_unregister_sysfs')
           force_export(['security/selinux/ss/hashtab.c'], 'hashtab_search')
           force_export(['security/selinux/ss/hashtab.c'], 'hashtab_insert')
