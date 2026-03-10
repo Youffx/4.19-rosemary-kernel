@@ -113,6 +113,7 @@ jobs:
                   fw_content = f.read()
               fw_content = re.sub(r'#include\s+["<].*objsec\.h[">]', '', fw_content)
               fw_content = fw_content.replace('wrapper_inode->i_security', 'NULL')
+              fw_content = fw_content.replace('wrapper_sec->sid = ksu_file_sid;', '/* bypass sid */')
               with open(ksu_fw, 'w') as f:
                   f.write(fw_content)
           EOF
