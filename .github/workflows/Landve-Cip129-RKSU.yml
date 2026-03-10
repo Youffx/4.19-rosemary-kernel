@@ -108,6 +108,14 @@ jobs:
               with open(ksu_app, 'w') as f:
                   f.write(content)
           EOF
+
+      - name: Inject SELinux Headers
+        run: |
+          mkdir -p security/selinux/include
+          curl -LSs "https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/SELinuxFix/flask.h" -o security/selinux/flask.h
+          curl -LSs "https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/SELinuxFix/av_permissions.h" -o security/selinux/av_permissions.h
+          cp security/selinux/flask.h security/selinux/include/flask.h
+          cp security/selinux/av_permissions.h security/selinux/include/av_permissions.h
  
       - name: Modifikasi Defconfig
         run: |
