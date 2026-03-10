@@ -121,66 +121,6 @@ jobs:
                   f.write(content)
           EOF
 
-      - name: Export SELinux and EXT4 Symbols
-        run: |
-          python3 - <<'EOF'
-          import os, re
-          
-          def add_export_to_file(file_path, symbol):
-              """Add EXPORT_SYMBOL_GPL to a file if symbol exists"""
-              if not os.path.exists(file_path):
-                  print(f"[SKIP] {file_path} not found")
-                  return False
-              
-              with open(file_path, 'r') as f:
-                  content = f.read()
-              
-              # Check if symbol already exported
-              if f"EXPORT_SYMBOL_GPL({symbol})" in content or f"EXPORT_SYMBOL({symbol})" in content:
-                  print(f"[OK] {symbol} already exported in {file_path}")
-                  return True
-              
-              # Remove static modifier if exists
-              pattern = r'\bstatic\s+(.+?\b' + re.escape(symbol) + r'\b.*?)(\n|;)'
-              if re.search(pattern, content, re.DOTALL):
-                  content = re.sub(pattern, r'\1\2', content)
-                  print(f"[REMOVED STATIC] from {symbol}")
-              
-              # Add export at end of file
-              if symbol in content:
-                  if not content.endswith('\n'):
-                      content += '\n'
-                  content += f"EXPORT_SYMBOL_GPL({symbol});\n"
-                  with open(file_path, 'w') as f:
-                      f.write(content)
-                  print(f"[EXPORTED] {symbol} in {file_path}")
-                  return True
-              
-              print(f"[NOT FOUND] {symbol} in {file_path}")
-              return False
-          
-          # Export SELinux symbols
-          print("=== Exporting SELinux Symbols ===")
-          add_export_to_file('security/selinux/ss/hashtab.c', 'hashtab_search')
-          add_export_to_file('security/selinux/ss/hashtab.c', 'hashtab_insert')
-          add_export_to_file('security/selinux/ss/ebitmap.c', 'ebitmap_set_bit')
-          add_export_to_file('security/selinux/ss/ebitmap.c', 'ebitmap_get_bit')
-          add_export_to_file('security/selinux/ss/avtab.c', 'avtab_search_node')
-          add_export_to_file('security/selinux/ss/avtab.c', 'avtab_search_node_next')
-          add_export_to_file('security/selinux/ss/avtab.c', 'avtab_insert_nonunique')
-          add_export_to_file('security/selinux/avc.c', 'avc_ss_reset')
-          add_export_to_file('security/selinux/netlink.c', 'selnl_notify_policyload')
-          add_export_to_file('security/selinux/status.c', 'selinux_status_update_policyload')
-          
-          print("\n=== Exporting EXT4 Symbols ===")
-          add_export_to_file('fs/ext4/sysfs.c', 'ext4_unregister_sysfs')
-          
-          # Special handling for selinux_state (multi-location)
-          print("\n=== Special: selinux_state ===")
-          for file_path in ['security/selinux/hooks.c', 'security/selinux/ss/services.c']:
-              add_export_to_file(file_path, 'selinux_state')
-          EOF
-
       - name: Inject SELinux Headers
         run: |
           mkdir -p security/selinux/include
@@ -199,6 +139,8 @@ jobs:
           sed -i '/CONFIG_EROFS_FS/d' $DEFCONFIG
           sed -i '/CONFIG_SDCARD_FS/d' $DEFCONFIG
           sed -i '/CONFIG_SECURITY/d' $DEFCONFIG
+          sed -i '/CONFIG_EXT4/d' $DEFCONFIG
+          sed -i '/CONFIG_SYSFS/d' $DEFCONFIG
           
           {
             echo "CONFIG_KSU=y"
@@ -211,6 +153,13 @@ jobs:
             echo "CONFIG_SECURITY=y"
             echo "CONFIG_SECURITY_NETWORK=y"
             echo "CONFIG_SECURITY_SELINUX=y"
+            echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y"
+            echo "CONFIG_SECURITY_SELINUX_DISABLE=y"
+            echo "CONFIG_SECURITY_SELINUX_AVC_STATS=y"
+            echo "CONFIG_EXT4_FS=y"
+            echo "CONFIG_EXT4_FS_POSIX_ACL=y"
+            echo "CONFIG_EXT4_FS_SECURITY=y"
+            echo "CONFIG_SYSFS=y"
             echo 'CONFIG_LOCALVERSION="-LandVe🍋‍🟩/Lime"'
             echo "CONFIG_LOCALVERSION_AUTO=n"
           } >> $DEFCONFIG
@@ -222,13 +171,126 @@ jobs:
           make O=out mrproper
           make O=out distclean
 
-      - name: Debug SELinux Build
+      - name: Fix KernelSU Compatibility with Kernel 4.19
         run: |
-         echo "=== Checking SELinux files ==="
-         ls -la security/selinux/ss/
-         grep -l "hashtab_search" security/selinux/ss/*.c || echo "hashtab_search not found"
-         grep -l "ext4_unregister" fs/ext4/* || echo "ext4_unregister not found"
-         grep "EXPORT_SYMBOL.*hashtab" security/selinux/ss/hashtab.c || echo "No export found"
+          python3 - <<'EOF'
+          import os
+          import re
+          
+          ksud_file = 'drivers/kernelsu/ksud.c'
+          if os.path.exists(ksud_file):
+              with open(ksud_file, 'r') as f:
+                  content = f.read()
+              
+              content = re.sub(
+                  r'void\s+nuke_ext4_sysfs\s*\([^)]*\)\s*\{[^}]*ext4_unregister_sysfs[^}]*\}',
+                  'void nuke_ext4_sysfs(struct super_block *sb) { }',
+                  content,
+                  flags=re.DOTALL
+              )
+              
+              if 'ext4_unregister_sysfs' in content:
+                  content = re.sub(
+                      r'ext4_unregister_sysfs\s*\([^)]*\);',
+                      '',
+                      content
+                  )
+              
+              with open(ksud_file, 'w') as f:
+                  f.write(content)
+              print(f"[FIXED] {ksud_file}")
+          
+          sepolicy_file = 'drivers/kernelsu/selinux/sepolicy.c'
+          if os.path.exists(sepolicy_file):
+              with open(sepolicy_file, 'r') as f:
+                  content = f.read()
+              
+              wrapper_code = '''
+          extern int hashtab_search(void *h, const void *key, void **datum);
+          extern int hashtab_insert(void *h, const void *key, void *datum);
+          extern int ebitmap_set_bit(void *e, unsigned long bit, int value);
+          extern int ebitmap_get_bit(void *e, unsigned long bit);
+          extern void *avtab_search_node(void *h, void *key);
+          extern void *avtab_search_node_next(void *node, int specified);
+          extern int avtab_insert_nonunique(void *h, void *key, void *datum);
+          '''
+              
+              if '#include' in content:
+                  last_include = content.rfind('#include')
+                  last_include = content.find('\n', last_include) + 1
+                  if wrapper_code not in content:
+                      content = content[:last_include] + wrapper_code + content[last_include:]
+              
+              with open(sepolicy_file, 'w') as f:
+                  f.write(content)
+              print(f"[FIXED] {sepolicy_file}")
+          
+          rules_file = 'drivers/kernelsu/selinux/rules.c'
+          if os.path.exists(rules_file):
+              with open(rules_file, 'r') as f:
+                  content = f.read()
+              
+              selinux_wrapper = '''
+          extern struct selinux_state selinux_state;
+          extern void avc_ss_reset(u32 seqno);
+          extern void selnl_notify_policyload(u32 seqno);
+          extern void selinux_status_update_policyload(u32 seqno);
+          '''
+              
+              if '#include' in content:
+                  last_include = content.rfind('#include')
+                  last_include = content.find('\n', last_include) + 1
+                  if selinux_wrapper not in content:
+                      content = content[:last_include] + selinux_wrapper + content[last_include:]
+              
+              with open(rules_file, 'w') as f:
+                  f.write(content)
+              print(f"[FIXED] {rules_file}")
+          EOF
+
+      - name: Create KernelSU SELinux Export Stubs
+        run: |
+          mkdir -p drivers/kernelsu/selinux
+          
+          cat > drivers/kernelsu/selinux/compat_exports.c <<'COMPAT_EOF'
+          #include <linux/kernel.h>
+          #include <linux/module.h>
+          
+          extern int hashtab_search(void *h, const void *key, void **datum);
+          extern int hashtab_insert(void *h, const void *key, void *datum);
+          extern int ebitmap_set_bit(void *e, unsigned long bit, int value);
+          extern int ebitmap_get_bit(void *e, unsigned long bit);
+          extern void *avtab_search_node(void *h, void *key);
+          extern void *avtab_search_node_next(void *node, int specified);
+          extern int avtab_insert_nonunique(void *h, void *key, void *datum);
+          extern struct selinux_state selinux_state;
+          extern void avc_ss_reset(u32 seqno);
+          extern void selnl_notify_policyload(u32 seqno);
+          extern void selinux_status_update_policyload(u32 seqno);
+          
+          EXPORT_SYMBOL_GPL(hashtab_search);
+          EXPORT_SYMBOL_GPL(hashtab_insert);
+          EXPORT_SYMBOL_GPL(ebitmap_set_bit);
+          EXPORT_SYMBOL_GPL(ebitmap_get_bit);
+          EXPORT_SYMBOL_GPL(avtab_search_node);
+          EXPORT_SYMBOL_GPL(avtab_search_node_next);
+          EXPORT_SYMBOL_GPL(avtab_insert_nonunique);
+          EXPORT_SYMBOL_GPL(selinux_state);
+          EXPORT_SYMBOL_GPL(avc_ss_reset);
+          EXPORT_SYMBOL_GPL(selnl_notify_policyload);
+          EXPORT_SYMBOL_GPL(selinux_status_update_policyload);
+          COMPAT_EOF
+
+      - name: Update KernelSU Makefile for Exports
+        run: |
+          MAKEFILE="drivers/kernelsu/Makefile"
+          
+          if [ -f "$MAKEFILE" ]; then
+            if ! grep -q "compat_exports.o" "$MAKEFILE"; then
+              echo "" >> "$MAKEFILE"
+              echo "kernelsu-y += selinux/compat_exports.o" >> "$MAKEFILE"
+            fi
+          fi
 
       - name: Build Kernel
         run: |
@@ -255,7 +317,7 @@ jobs:
           
           make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}"
-          
+
       - name: Upload Image
         uses: actions/upload-artifact@v4
         with:
