@@ -19,8 +19,15 @@ jobs:
         run: |
           wget -q https://git.kernel.org/pub/scm/linux/kernel/git/cip/linux-cip.git/snapshot/linux-cip-4.19.325-cip129.tar.gz
           tar -xzf linux-cip-4.19.325-cip129.tar.gz
-          rsync -a --exclude='security/selinux/' linux-cip-4.19.325-cip129/ ./
+          rsync -a linux-cip-4.19.325-cip129/ ./
           rm -rf linux-cip-4.19.325-cip129*
+
+      - name: Restore Local SELinux Security
+        run: |
+          git clone --depth=1 -b main https://github.com/Youffx/4.19-rosemary-kernel.git temp_rosemary
+          rm -rf security/selinux
+          mv temp_rosemary/security/selinux security/
+          rm -rf temp_rosemary
 
       - name: Install Dependencies
         run: |
