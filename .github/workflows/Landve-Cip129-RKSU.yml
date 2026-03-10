@@ -167,8 +167,12 @@ jobs:
           if os.path.exists(ksu_shim):
               with open(ksu_shim, 'r') as f:
                   s_content = f.read()
-              s_content = s_content.replace('security_add_hooks', 'ksu_dummy_hooks')
-              s_content = 'void ksu_dummy_hooks(void *a, int b, void *c) {}\nint security_hook_heads = 0;\n' + s_content
+              dummies = (
+                  'void ksu_lsm_hook_init(void) {}\n'
+                  'void ksu_dummy_hooks(void *a, int b, void *c) {}\n'
+                  'int security_hook_heads = 0;\n'
+              )
+              s_content = dummies + s_content.replace('security_add_hooks', 'ksu_dummy_hooks')
               with open(ksu_shim, 'w') as f:
                   f.write(s_content)
 
