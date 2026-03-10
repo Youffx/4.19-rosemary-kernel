@@ -41,10 +41,6 @@ jobs:
           mkdir -p drivers/input/touchscreen/mediatek/ft3418_i2c/include/firmware/
           touch drivers/input/touchscreen/mediatek/ft3418_i2c/include/firmware/fw_sample.i
 
-      - name: Apply RKSU Manual Hook Patch
-        run: |
-          curl -LSs "https://raw.githubusercontent.com/rksuorg/kernel_patches/master/manual_hook/kernel-4.19_5.4.patch" | patch -p1
-
       - name: Inject Modified Files
         run: |
           curl -LSs "https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/FsFix/sysfs.c" -o fs/ext4/sysfs.c
@@ -156,6 +152,10 @@ jobs:
           force_export(['security/selinux/netlink.c'], 'selnl_notify_policyload')
           force_export(['security/selinux/status.c'], 'selinux_status_update_policyload')
           EOF
+
+      - name: Apply RKSU Manual Hook Patch
+        run: |
+          curl -LSs "https://raw.githubusercontent.com/rksuorg/kernel_patches/master/manual_hook/kernel-4.19_5.4.patch" | patch -p1
 
       - name: Inject SELinux Headers
         run: |
