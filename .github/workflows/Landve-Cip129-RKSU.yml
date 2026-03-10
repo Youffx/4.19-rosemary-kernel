@@ -41,13 +41,9 @@ jobs:
           mkdir -p drivers/input/touchscreen/mediatek/ft3418_i2c/include/firmware/
           touch drivers/input/touchscreen/mediatek/ft3418_i2c/include/firmware/fw_sample.i
 
-      - name: Inject Modified Files
+      - name: Apply RKSU Manual Hook Patch
         run: |
-          curl -LSs "https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/FsFix/sysfs.c" -o fs/ext4/sysfs.c
-          curl -LSs "https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/SELinuxFix/avtab.c" -o security/selinux/ss/avtab.c
-          curl -LSs "https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/SELinuxFix/ebitmap.c" -o security/selinux/ss/ebitmap.c
-          curl -LSs "https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/SELinuxFix/hashtab.c" -o security/selinux/ss/hashtab.c
-          curl -LSs "https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/SELinuxFix/services.c" -o security/selinux/ss/services.c
+          curl -LSs "https://raw.githubusercontent.com/rksuorg/kernel_patches/master/manual_hook/kernel-4.19_5.4.patch" | patch -p1
 
       - name: Fix Macro Redefinitions and KernelSU Patch
         run: |
@@ -92,7 +88,6 @@ jobs:
                           new_lines.append(line)
                   with open(path, 'w') as f:
                       f.writelines(new_lines)
-
           kernel_h = 'include/linux/kernel.h'
           if os.path.exists(kernel_h):
               with open(kernel_h, 'a') as f:
@@ -103,7 +98,6 @@ jobs:
                   f.write("#ifndef XATTR_NAME_MAX\n#define XATTR_NAME_MAX 255\n#endif\n")
                   f.write("#ifndef XATTR_SIZE_MAX\n#define XATTR_SIZE_MAX 65536\n#endif\n")
                   f.write("#ifndef XATTR_LIST_MAX\n#define XATTR_LIST_MAX 65536\n#endif\n")
-
           ksu_makefile = 'drivers/kernelsu/Makefile'
           if os.path.exists(ksu_makefile):
               with open(ksu_makefile, 'r') as f:
@@ -116,7 +110,6 @@ jobs:
                   f.write("ccflags-y += -I$(srctree)/security/selinux/include\n")
                   f.write("ccflags-y += -I$(objtree)/security/selinux\n")
                   f.write("ccflags-y += -I$(objtree)/security/selinux/include\n")
-
           ksu_app = 'drivers/kernelsu/app_profile.c'
           if os.path.exists(ksu_app):
               with open(ksu_app, 'r') as f:
@@ -126,36 +119,67 @@ jobs:
               content = re.sub(r'if\s*\(\!\!\!current->seccomp\.mode\)', 'if (0)', content)
               with open(ksu_app, 'w') as f:
                   f.write(content)
-
-          def force_export(file_paths, symbol):
-              for file_path in file_paths:
-                  if not os.path.exists(file_path):
-                      continue
-                  with open(file_path, 'r') as f:
-                      content = f.read()
-                  
-                  pattern = r'\bstatic\s+(?=(?:inline\s+)?[\w\s\*]*\b' + re.escape(symbol) + r'\b)'
-                  if re.search(pattern, content):
-                      content = re.sub(pattern, '', content)
-                  
-                  if f"EXPORT_SYMBOL_GPL({symbol})" not in content and f"EXPORT_SYMBOL({symbol})" not in content:
-                      content += f"\nEXPORT_SYMBOL_GPL({symbol});\n"
-                  
-                  if "#include <linux/export.h>" not in content:
-                      content = "#include <linux/export.h>\n" + content
-                      
-                  with open(file_path, 'w') as f:
-                      f.write(content)
-
-          force_export(['security/selinux/hooks.c'], 'selinux_state')
-          force_export(['security/selinux/avc.c'], 'avc_ss_reset')
-          force_export(['security/selinux/netlink.c'], 'selnl_notify_policyload')
-          force_export(['security/selinux/status.c'], 'selinux_status_update_policyload')
           EOF
 
-      - name: Apply RKSU Manual Hook Patch
+      - name: Export SELinux and EXT4 Symbols
         run: |
-          curl -LSs "https://raw.githubusercontent.com/rksuorg/kernel_patches/master/manual_hook/kernel-4.19_5.4.patch" | patch -p1
+          python3 - <<'EOF'
+          import os, re
+          
+          def add_export_to_file(file_path, symbol):
+              """Add EXPORT_SYMBOL_GPL to a file if symbol exists"""
+              if not os.path.exists(file_path):
+                  print(f"[SKIP] {file_path} not found")
+                  return False
+              
+              with open(file_path, 'r') as f:
+                  content = f.read()
+              
+              # Check if symbol already exported
+              if f"EXPORT_SYMBOL_GPL({symbol})" in content or f"EXPORT_SYMBOL({symbol})" in content:
+                  print(f"[OK] {symbol} already exported in {file_path}")
+                  return True
+              
+              # Remove static modifier if exists
+              pattern = r'\bstatic\s+(.+?\b' + re.escape(symbol) + r'\b.*?)(\n|;)'
+              if re.search(pattern, content, re.DOTALL):
+                  content = re.sub(pattern, r'\1\2', content)
+                  print(f"[REMOVED STATIC] from {symbol}")
+              
+              # Add export at end of file
+              if symbol in content:
+                  if not content.endswith('\n'):
+                      content += '\n'
+                  content += f"EXPORT_SYMBOL_GPL({symbol});\n"
+                  with open(file_path, 'w') as f:
+                      f.write(content)
+                  print(f"[EXPORTED] {symbol} in {file_path}")
+                  return True
+              
+              print(f"[NOT FOUND] {symbol} in {file_path}")
+              return False
+          
+          # Export SELinux symbols
+          print("=== Exporting SELinux Symbols ===")
+          add_export_to_file('security/selinux/ss/hashtab.c', 'hashtab_search')
+          add_export_to_file('security/selinux/ss/hashtab.c', 'hashtab_insert')
+          add_export_to_file('security/selinux/ss/ebitmap.c', 'ebitmap_set_bit')
+          add_export_to_file('security/selinux/ss/ebitmap.c', 'ebitmap_get_bit')
+          add_export_to_file('security/selinux/ss/avtab.c', 'avtab_search_node')
+          add_export_to_file('security/selinux/ss/avtab.c', 'avtab_search_node_next')
+          add_export_to_file('security/selinux/ss/avtab.c', 'avtab_insert_nonunique')
+          add_export_to_file('security/selinux/avc.c', 'avc_ss_reset')
+          add_export_to_file('security/selinux/netlink.c', 'selnl_notify_policyload')
+          add_export_to_file('security/selinux/status.c', 'selinux_status_update_policyload')
+          
+          print("\n=== Exporting EXT4 Symbols ===")
+          add_export_to_file('fs/ext4/sysfs.c', 'ext4_unregister_sysfs')
+          
+          # Special handling for selinux_state (multi-location)
+          print("\n=== Special: selinux_state ===")
+          for file_path in ['security/selinux/hooks.c', 'security/selinux/ss/services.c']:
+              add_export_to_file(file_path, 'selinux_state')
+          EOF
 
       - name: Inject SELinux Headers
         run: |
@@ -193,6 +217,11 @@ jobs:
           
           echo "# CONFIG_KPROBES is not set" >> $DEFCONFIG
 
+      - name: Clean Build Directory
+        run: |
+          make O=out mrproper
+          make O=out distclean
+
       - name: Build Kernel
         run: |
           export PATH="${{ github.workspace }}/clang/bin:$PATH"
@@ -218,6 +247,7 @@ jobs:
           
           make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}"
+          
       - name: Upload Image
         uses: actions/upload-artifact@v4
         with:
