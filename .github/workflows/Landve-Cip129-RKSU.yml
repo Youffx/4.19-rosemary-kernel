@@ -121,54 +121,6 @@ jobs:
                   f.write(content)
           EOF
 
-      - name: Inject SELinux Headers
-        run: |
-          mkdir -p security/selinux/include
-          curl -LSs "https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/SELinuxFix/flask.h" -o security/selinux/flask.h
-          curl -LSs "https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/SELinuxFix/av_permissions.h" -o security/selinux/av_permissions.h
-          cp security/selinux/flask.h security/selinux/include/flask.h
-          cp security/selinux/av_permissions.h security/selinux/include/av_permissions.h
-
-      - name: Force Export SELinux Symbols
-        run: |
-          python3 - <<'EOF'
-          import os
-          import re
-          
-          files_and_symbols = [
-              ('security/selinux/ss/hashtab.c', ['hashtab_search', 'hashtab_insert']),
-              ('security/selinux/ss/ebitmap.c', ['ebitmap_set_bit', 'ebitmap_get_bit']),
-              ('security/selinux/ss/avtab.c', ['avtab_search_node', 'avtab_search_node_next', 'avtab_insert_nonunique']),
-              ('security/selinux/avc.c', ['avc_ss_reset']),
-              ('security/selinux/netlink.c', ['selnl_notify_policyload']),
-              ('security/selinux/status.c', ['selinux_status_update_policyload']),
-              ('security/selinux/hooks.c', ['selinux_state']),
-          ]
-          
-          for filepath, symbols in files_and_symbols:
-              if not os.path.exists(filepath):
-                  print(f"[SKIP] {filepath} not found")
-                  continue
-              
-              with open(filepath, 'r') as f:
-                  content = f.read()
-              
-              for symbol in symbols:
-                  if f"EXPORT_SYMBOL_GPL({symbol})" in content or f"EXPORT_SYMBOL({symbol})" in content:
-                      print(f"[SKIP] {symbol} already exported in {filepath}")
-                      continue
-                  
-                  if symbol not in content:
-                      print(f"[SKIP] {symbol} not found in {filepath}")
-                      continue
-                  
-                  content += f"\nEXPORT_SYMBOL_GPL({symbol});\n"
-                  print(f"[EXPORT] {symbol} in {filepath}")
-              
-              with open(filepath, 'w') as f:
-                  f.write(content)
-          EOF
-
       - name: Modifikasi Defconfig
         run: |
           DEFCONFIG="arch/arm64/configs/rosemary_defconfig"
@@ -210,11 +162,6 @@ jobs:
         run: |
           make O=out mrproper
           make O=out distclean
-
-      - name: Fix KernelSU Compatibility with Kernel 4.19
-        run: |
-          sed -i 's/void nuke_ext4_sysfs/int nuke_ext4_sysfs/g' drivers/kernelsu/ksud.h
-          sed -i '/ext4_unregister_sysfs/d' drivers/kernelsu/ksud.c
 
       - name: Build Kernel
         run: |
