@@ -175,6 +175,21 @@ jobs:
           if os.path.exists(ksu_sepolicy):
               with open(ksu_sepolicy, 'w') as f:
                   f.write('#include <linux/types.h>\n#include "sepolicy.h"\nvoid ksu_load_policy(void) { return; }\n')
+          ksu_ksud = 'drivers/kernelsu/ksud.c'
+          if os.path.exists(ksu_ksud):
+              with open(ksu_ksud, 'r') as f:
+                  k_content = f.read()
+              k_content = k_content.replace('ext4_unregister_sysfs(sbi);', '/* bypass */')
+              with open(ksu_ksud, 'w') as f:
+                  f.write(k_content)
+          ksu_shim = 'drivers/kernelsu/shim.c'
+          if os.path.exists(ksu_shim):
+              with open(ksu_shim, 'r') as f:
+                  s_content = f.read()
+              s_content = s_content.replace('security_add_hooks', '// security_add_hooks')
+              s_content = s_content.replace('&security_hook_heads', 'NULL')
+              with open(ksu_shim, 'w') as f:
+                  f.write(s_content)    
           EOF
 
       - name: Inject SELinux Headers
