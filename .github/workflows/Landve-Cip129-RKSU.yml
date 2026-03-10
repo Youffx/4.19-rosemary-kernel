@@ -162,9 +162,8 @@ jobs:
           if os.path.exists(ksu_shim):
               with open(ksu_shim, 'r') as f:
                   s_content = f.read()
-              s_content = '#define ksu_dummy_security_add_hooks(...) do {} while(0)\n' + s_content.replace('security_add_hooks', 'ksu_dummy_security_add_hooks')
-              if 'struct security_hook_heads security_hook_heads;' not in s_content:
-                  s_content = s_content + '\nstruct security_hook_heads security_hook_heads;\n'
+              s_content = s_content.replace('security_add_hooks', 'ksu_dummy_hooks')
+              s_content = 'void ksu_dummy_hooks(void *a, int b, void *c) {}\nstruct security_hook_heads { int d; } security_hook_heads;\n' + s_content
               with open(ksu_shim, 'w') as f:
                   f.write(s_content)
 
