@@ -132,6 +132,14 @@ jobs:
               s_content = s_struct + s_content.replace('return tsec->sid == cached_sid;', 'return 1;')
               with open(ksu_selinux, 'w') as f:
                   f.write(s_content)
+          ksu_sepolicy = 'drivers/kernelsu/selinux/sepolicy.c'
+          if os.path.exists(ksu_sepolicy):
+              with open(ksu_sepolicy, 'r') as f:
+                  p_content = f.read()
+              p_macro = '\n#ifndef CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS\n#define CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS 9\n#endif\n'
+              p_content = p_macro + p_content
+              with open(ksu_sepolicy, 'w') as f:
+                  f.write(p_content)
           EOF
 
       - name: Inject SELinux Headers
