@@ -154,7 +154,7 @@ jobs:
           if os.path.exists(ksu_ksud):
               with open(ksu_ksud, 'r') as f:
                   k_content = f.read()
-              k_content = k_content.replace('ext4_unregister_sysfs(sbi);', '// bypass ext4')
+              k_content = re.sub(r'ext4_unregister_sysfs\([^)]*\);', '/* bypass */', k_content)
               with open(ksu_ksud, 'w') as f:
                   f.write(k_content)
 
@@ -162,9 +162,8 @@ jobs:
           if os.path.exists(ksu_shim):
               with open(ksu_shim, 'r') as f:
                   s_content = f.read()
-              s_content = s_content.replace('security_add_hooks', '// security_add_hooks')
-              s_content = s_content.replace('&security_hook_heads', 'NULL')
-              s_content = s_content.replace('ksu_hooks,', '// ksu_hooks,')
+              s_content = re.sub(r'struct\s+security_hook_list\s+ksu_hooks.*?=.*?\{.*?\};', 'struct security_hook_list ksu_hooks[] = {};', s_content, flags=re.DOTALL)
+              s_content = re.sub(r'security_add_hooks\([^)]*\);', '/* bypass */', s_content)
               with open(ksu_shim, 'w') as f:
                   f.write(s_content)
 
