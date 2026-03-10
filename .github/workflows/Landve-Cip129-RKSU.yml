@@ -252,11 +252,12 @@ jobs:
           make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
           make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" Image dtbs
           
-          gzip -n -c out/arch/arm64/boot/Image > out/arch/arm64/boot/Image.gz
-          cat out/arch/arm64/boot/Image.gz $(find out/arch/arm64/boot/dts/ -name "*.dtb" | head -n 1) > out/arch/arm64/boot/Image.gz-dtb
+          mkdir -p out/final_artifacts
+          gzip -n -c out/arch/arm64/boot/Image > out/final_artifacts/Image.gz
+          cp $(find out/arch/arm64/boot/dts/ -name "*.dtb" | head -n 1) out/final_artifacts/
 
-      - name: Upload Image
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: LandVe-Image-RKSU
-          path: out/arch/arm64/boot/Image.gz-dtb
+          name: LandVe-Kernel-RKSU
+          path: out/final_artifacts/
