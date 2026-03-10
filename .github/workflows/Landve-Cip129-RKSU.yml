@@ -173,39 +173,9 @@ jobs:
 
       - name: Fix KernelSU Compatibility with Kernel 4.19
         run: |
-          python3 - <<'EOF'
-          import os
-          import re
+          sed -i 's/ext4_unregister_sysfs([^)]*);//' drivers/kernelsu/ksud.c
           
-          ksud_file = 'drivers/kernelsu/ksud.c'
-          if os.path.exists(ksud_file):
-              with open(ksud_file, 'r') as f:
-                  content = f.read()
-              
-              content = re.sub(
-                  r'void\s+nuke_ext4_sysfs\s*\([^)]*\)\s*\{[^}]*ext4_unregister_sysfs[^}]*\}',
-                  'void nuke_ext4_sysfs(struct super_block *sb) { }',
-                  content,
-                  flags=re.DOTALL
-              )
-              
-              if 'ext4_unregister_sysfs' in content:
-                  content = re.sub(
-                      r'ext4_unregister_sysfs\s*\([^)]*\);',
-                      '',
-                      content
-                  )
-              
-              with open(ksud_file, 'w') as f:
-                  f.write(content)
-              print(f"[FIXED] {ksud_file}")
-          
-          sepolicy_file = 'drivers/kernelsu/selinux/sepolicy.c'
-          if os.path.exists(sepolicy_file):
-              with open(sepolicy_file, 'r') as f:
-                  content = f.read()
-              
-              wrapper_code = '''
+          cat >> drivers/kernelsu/selinux/sepolicy.c <<'EOF'
           extern int hashtab_search(void *h, const void *key, void **datum);
           extern int hashtab_insert(void *h, const void *key, void *datum);
           extern int ebitmap_set_bit(void *e, unsigned long bit, int value);
@@ -213,39 +183,13 @@ jobs:
           extern void *avtab_search_node(void *h, void *key);
           extern void *avtab_search_node_next(void *node, int specified);
           extern int avtab_insert_nonunique(void *h, void *key, void *datum);
-          '''
-              
-              if '#include' in content:
-                  last_include = content.rfind('#include')
-                  last_include = content.find('\n', last_include) + 1
-                  if wrapper_code not in content:
-                      content = content[:last_include] + wrapper_code + content[last_include:]
-              
-              with open(sepolicy_file, 'w') as f:
-                  f.write(content)
-              print(f"[FIXED] {sepolicy_file}")
+          EOF
           
-          rules_file = 'drivers/kernelsu/selinux/rules.c'
-          if os.path.exists(rules_file):
-              with open(rules_file, 'r') as f:
-                  content = f.read()
-              
-              selinux_wrapper = '''
+          cat >> drivers/kernelsu/selinux/rules.c <<'EOF'
           extern struct selinux_state selinux_state;
           extern void avc_ss_reset(u32 seqno);
           extern void selnl_notify_policyload(u32 seqno);
           extern void selinux_status_update_policyload(u32 seqno);
-          '''
-              
-              if '#include' in content:
-                  last_include = content.rfind('#include')
-                  last_include = content.find('\n', last_include) + 1
-                  if selinux_wrapper not in content:
-                      content = content[:last_include] + selinux_wrapper + content[last_include:]
-              
-              with open(rules_file, 'w') as f:
-                  f.write(content)
-              print(f"[FIXED] {rules_file}")
           EOF
 
       - name: Create KernelSU SELinux Export Stubs
