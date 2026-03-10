@@ -25,8 +25,8 @@ jobs:
       - name: Restore Local SELinux Security
         run: |
           git clone --depth=1 -b main https://github.com/Youffx/4.19-rosemary-kernel.git temp_rosemary
-          rm -rf security/selinux
-          mv temp_rosemary/security/selinux security/
+          rm -rf security
+          mv temp_rosemary/security security/
           rm -rf temp_rosemary
 
       - name: Install Dependencies
@@ -51,14 +51,6 @@ jobs:
       - name: Apply RKSU Manual Hook Patch
         run: |
           curl -LSs "https://raw.githubusercontent.com/rksuorg/kernel_patches/master/manual_hook/kernel-4.19_5.4.patch" | patch -p1
-
-      - name: Inject SELinux Headers
-        run: |
-          mkdir -p security/selinux/include
-          curl -LSs "https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/SELinuxFix/flask.h" -o security/selinux/flask.h
-          curl -LSs "https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/SELinuxFix/av_permissions.h" -o security/selinux/av_permissions.h
-          cp security/selinux/flask.h security/selinux/include/flask.h
-          cp security/selinux/av_permissions.h security/selinux/include/av_permissions.h
 
       - name: Fix Macro Redefinitions and KernelSU Patch
         run: |
@@ -123,37 +115,7 @@ jobs:
               with open(ksu_app, 'w') as f:
                   f.write(content)
           EOF
-
-      - name: Fix RKSU file_wrapper SELinux Error
-        run: |
-          python3 - <<'EOF'
-          import os, re
-          
-          fw = 'drivers/kernelsu/file_wrapper.c'
-          if os.path.exists(fw):
-              with open(fw, 'r') as f:
-                  content = f.read()
-              
-              dummy_struct = """
-          #ifndef SECINITSID_UNLABELED
-          #define SECINITSID_UNLABELED 1
-          #endif
-          struct dummy_inode_security_struct {
-              unsigned int osid;
-              unsigned int sid;
-              unsigned short sclass;
-              unsigned char initialized;
-          };
-          """
-              content = re.sub(r'#include\s*"\.\./security/selinux/include/objsec\.h"', dummy_struct, content)
-              
-              content = content.replace('struct inode_security_struct', 'struct dummy_inode_security_struct')
-              content = content.replace('wrapper_inode->i_security', 'NULL')
-              
-              with open(fw, 'w') as f:
-                  f.write(content)
-          EOF
-
+ 
       - name: Modifikasi Defconfig
         run: |
           DEFCONFIG="arch/arm64/configs/rosemary_defconfig"
