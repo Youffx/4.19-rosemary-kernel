@@ -161,7 +161,7 @@ jobs:
           ksu_lsm = 'drivers/kernelsu/lsm_hook.c'
           if os.path.exists(ksu_lsm):
               with open(ksu_lsm, 'w') as f:
-                  f.write('struct security_hook_list ksu_hooks[] = {};\n')
+                  f.write('void *ksu_hooks[1] = {0};\n')
 
           ksu_shim = 'drivers/kernelsu/shim.c'
           if os.path.exists(ksu_shim):
