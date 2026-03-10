@@ -140,6 +140,15 @@ jobs:
               p_content = p_macro + p_content
               with open(ksu_sepolicy, 'w') as f:
                   f.write(p_content)
+          ksu_sepolicy_h = 'drivers/kernelsu/selinux/sepolicy.h'
+          if os.path.exists(ksu_sepolicy_h):
+              with open(ksu_sepolicy_h, 'r') as f:
+                  ph_content = f.read()
+              ph_macro = '#ifndef CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS\n#define CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS 9\n#endif\n'
+              if 'SIDTAB_HASH_BITS 9' not in ph_content:
+                  ph_content = ph_macro + ph_content
+              with open(ksu_sepolicy_h, 'w') as f:
+                  f.write(ph_content)
           EOF
 
       - name: Inject SELinux Headers
