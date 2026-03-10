@@ -111,7 +111,8 @@ jobs:
           if os.path.exists(ksu_fw):
               with open(ksu_fw, 'r') as f:
                   fw_content = f.read()
-              fw_content = fw_content.replace('#ifdef CONFIG_SECURITY_SELINUX', '#if 0')
+              fw_content = re.sub(r'#include\s+["<].*objsec\.h[">]', '', fw_content)
+              fw_content = fw_content.replace('wrapper_inode->i_security', 'NULL')
               with open(ksu_fw, 'w') as f:
                   f.write(fw_content)
           EOF
