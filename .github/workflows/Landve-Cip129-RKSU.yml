@@ -154,9 +154,7 @@ jobs:
           if os.path.exists(ksu_ksud):
               with open(ksu_ksud, 'r') as f:
                   k_content = f.read()
-              k_content = re.sub(r'(void\s+)?ext4_unregister_sysfs\([^)]*\);', '', k_content)
-              k_content = k_content.replace('void /* bypass */', '')
-              k_content = re.sub(r'int\s+nuke_ext4_sysfs\(const\s+char\s*\*mnt\)\s*\{.*?\}', 'int nuke_ext4_sysfs(const char *mnt) { return 0; }', k_content, flags=re.DOTALL)
+              k_content = 'struct super_block;\nvoid ksu_dummy_ext4(struct super_block *sb) {}\n' + k_content.replace('ext4_unregister_sysfs', 'ksu_dummy_ext4')
               with open(ksu_ksud, 'w') as f:
                   f.write(k_content)
 
