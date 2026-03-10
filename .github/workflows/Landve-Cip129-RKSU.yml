@@ -166,13 +166,11 @@ jobs:
                   f.write(content)
           ksu_rules = 'drivers/kernelsu/selinux/rules.c'
           if os.path.exists(ksu_rules):
-              with open(ksu_rules, 'r') as f:
-                  content = f.read()
-              content = re.sub(r'void\s+apply_kernelsu_rules\(.*\)\s*\{', 'void apply_kernelsu_rules(void) { return; /*', content)
-              content = re.sub(r'void\s+handle_sepolicy\(.*\)\s*\{', 'void handle_sepolicy(void) { return; /*', content)
-              content = content.replace('avc_ss_reset(0);', '*/ avc_ss_reset(0);')
               with open(ksu_rules, 'w') as f:
-                  f.write(content)
+                  f.write('#include <linux/types.h>\n')
+                  f.write('void apply_kernelsu_rules(void) {}\n')
+                  f.write('int handle_sepolicy(unsigned int cmd, unsigned long a2, unsigned long a3, unsigned long a4, unsigned long a5) { return 0; }\n')
+                  f.write('void ksu_setenforce(int enforce) {}\n')
           ksu_sepolicy = 'drivers/kernelsu/selinux/sepolicy.c'
           if os.path.exists(ksu_sepolicy):
               with open(ksu_sepolicy, 'w') as f:
