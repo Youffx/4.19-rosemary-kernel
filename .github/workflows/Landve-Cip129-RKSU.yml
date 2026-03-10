@@ -149,6 +149,34 @@ jobs:
                   ph_content = ph_macro + ph_content
               with open(ksu_sepolicy_h, 'w') as f:
                   f.write(ph_content)
+          ksu_ksud = 'drivers/kernelsu/ksud.c'
+          if os.path.exists(ksu_ksud):
+              with open(ksu_ksud, 'r') as f:
+                  content = f.read()
+              content = content.replace('ext4_unregister_sysfs(sbi);', '/* bypass */')
+              with open(ksu_ksud, 'w') as f:
+                  f.write(content)
+          ksu_shim = 'drivers/kernelsu/shim.c'
+          if os.path.exists(ksu_shim):
+              with open(ksu_shim, 'r') as f:
+                  content = f.read()
+              content = re.sub(r'int\s+ksu_lsm_hook_init\(.*\)\s*\{', 'int ksu_lsm_hook_init(void) { return 0; /*', content)
+              content = content.replace('return 0;\n}', '*/\n}')
+              with open(ksu_shim, 'w') as f:
+                  f.write(content)
+          ksu_rules = 'drivers/kernelsu/selinux/rules.c'
+          if os.path.exists(ksu_rules):
+              with open(ksu_rules, 'r') as f:
+                  content = f.read()
+              content = re.sub(r'void\s+apply_kernelsu_rules\(.*\)\s*\{', 'void apply_kernelsu_rules(void) { return; /*', content)
+              content = re.sub(r'void\s+handle_sepolicy\(.*\)\s*\{', 'void handle_sepolicy(void) { return; /*', content)
+              content = content.replace('avc_ss_reset(0);', '*/ avc_ss_reset(0);')
+              with open(ksu_rules, 'w') as f:
+                  f.write(content)
+          ksu_sepolicy = 'drivers/kernelsu/selinux/sepolicy.c'
+          if os.path.exists(ksu_sepolicy):
+              with open(ksu_sepolicy, 'w') as f:
+                  f.write('#include <linux/types.h>\n#include "sepolicy.h"\nvoid ksu_load_policy(void) { return; }\n')
           EOF
 
       - name: Inject SELinux Headers
