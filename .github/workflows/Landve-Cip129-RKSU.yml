@@ -124,6 +124,24 @@ jobs:
               sd_content = sd_content.replace('return (taskcred_sec_t *)cred->security;', 'return NULL;')
               with open(ksu_selinux_defs, 'w') as f:
                   f.write(sd_content)
+          ksu_selinux = 'drivers/kernelsu/selinux/selinux.c'
+          if os.path.exists(ksu_selinux):
+              with open(ksu_selinux, 'r') as f:
+                  s_content = f.read()
+              s_struct = '\nstruct task_security_struct { u32 osid; u32 sid; u32 exec_sid; u32 create_sid; u32 keycreate_sid; u32 sockcreate_sid; };\n'
+              if 'struct task_security_struct {' not in s_content:
+                  s_content = s_struct + s_content
+              with open(ksu_selinux, 'w') as f:
+                  f.write(s_content)
+          ksu_sepolicy = 'drivers/kernelsu/selinux/sepolicy.c'
+          if os.path.exists(ksu_sepolicy):
+              with open(ksu_sepolicy, 'r') as f:
+                  p_content = f.read()
+              p_macro = '\n#ifndef CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS\n#define CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS 9\n#endif\n'
+              if 'SIDTAB_HASH_BITS 9' not in p_content:
+                  p_content = p_macro + p_content
+              with open(ksu_sepolicy, 'w') as f:
+                  f.write(p_content)
           EOF
 
       - name: Inject SELinux Headers
