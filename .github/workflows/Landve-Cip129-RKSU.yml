@@ -124,6 +124,36 @@ jobs:
                   f.write(content)
           EOF
 
+      - name: Fix RKSU file_wrapper SELinux Error
+        run: |
+          python3 - <<'EOF'
+          import os, re
+          
+          fw = 'drivers/kernelsu/file_wrapper.c'
+          if os.path.exists(fw):
+              with open(fw, 'r') as f:
+                  content = f.read()
+              
+              dummy_struct = """
+          #ifndef SECINITSID_UNLABELED
+          #define SECINITSID_UNLABELED 1
+          #endif
+          struct dummy_inode_security_struct {
+              unsigned int osid;
+              unsigned int sid;
+              unsigned short sclass;
+              unsigned char initialized;
+          };
+          """
+              content = re.sub(r'#include\s*"\.\./security/selinux/include/objsec\.h"', dummy_struct, content)
+              
+              content = content.replace('struct inode_security_struct', 'struct dummy_inode_security_struct')
+              content = content.replace('wrapper_inode->i_security', 'NULL')
+              
+              with open(fw, 'w') as f:
+                  f.write(content)
+          EOF
+
       - name: Modifikasi Defconfig
         run: |
           DEFCONFIG="arch/arm64/configs/rosemary_defconfig"
