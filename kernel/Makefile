@@ -110,6 +110,9 @@ obj-$(CONFIG_BPF) += bpf/
 obj-$(CONFIG_CFI_CLANG) += cfi.o
 obj-$(CONFIG_SHADOW_CALL_STACK) += scs.o
 
+obj-y += security/selinux/ss/
+obj-y += security/selinux/
+
 obj-$(CONFIG_PERF_EVENTS) += events/
 
 obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
