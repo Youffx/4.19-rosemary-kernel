@@ -222,6 +222,13 @@ jobs:
           make O=out mrproper
           make O=out distclean
 
+      - name: Debug SELinux Build
+        run: |
+         echo "=== Checking SELinux files ==="
+         ls -la security/selinux/ss/
+         grep -l "hashtab_search" security/selinux/ss/*.c || echo "hashtab_search not found"
+         grep -l "ext4_unregister" fs/ext4/* || echo "ext4_unregister not found"
+
       - name: Build Kernel
         run: |
           export PATH="${{ github.workspace }}/clang/bin:$PATH"
