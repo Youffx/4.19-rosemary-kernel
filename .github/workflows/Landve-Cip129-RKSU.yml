@@ -228,6 +228,7 @@ jobs:
          ls -la security/selinux/ss/
          grep -l "hashtab_search" security/selinux/ss/*.c || echo "hashtab_search not found"
          grep -l "ext4_unregister" fs/ext4/* || echo "ext4_unregister not found"
+         grep "EXPORT_SYMBOL.*hashtab" security/selinux/ss/hashtab.c || echo "No export found"
 
       - name: Build Kernel
         run: |
