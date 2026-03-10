@@ -107,6 +107,13 @@ jobs:
               content = re.sub(r'if\s*\(\!\!\!current->seccomp\.mode\)', 'if (0)', content)
               with open(ksu_app, 'w') as f:
                   f.write(content)
+          ksu_fw = 'drivers/kernelsu/file_wrapper.c'
+          if os.path.exists(ksu_fw):
+              with open(ksu_fw, 'r') as f:
+                  fw_content = f.read()
+              fw_content = fw_content.replace('#ifdef CONFIG_SECURITY_SELINUX', '#if 0')
+              with open(ksu_fw, 'w') as f:
+                  f.write(fw_content)
           EOF
 
       - name: Inject SELinux Headers
