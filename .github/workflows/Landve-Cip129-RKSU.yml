@@ -173,24 +173,8 @@ jobs:
 
       - name: Fix KernelSU Compatibility with Kernel 4.19
         run: |
-          sed -i 's/ext4_unregister_sysfs([^)]*);//' drivers/kernelsu/ksud.c
-          
-          cat >> drivers/kernelsu/selinux/sepolicy.c <<'EOF'
-          extern int hashtab_search(void *h, const void *key, void **datum);
-          extern int hashtab_insert(void *h, const void *key, void *datum);
-          extern int ebitmap_set_bit(void *e, unsigned long bit, int value);
-          extern int ebitmap_get_bit(void *e, unsigned long bit);
-          extern void *avtab_search_node(void *h, void *key);
-          extern void *avtab_search_node_next(void *node, int specified);
-          extern int avtab_insert_nonunique(void *h, void *key, void *datum);
-          EOF
-          
-          cat >> drivers/kernelsu/selinux/rules.c <<'EOF'
-          extern struct selinux_state selinux_state;
-          extern void avc_ss_reset(u32 seqno);
-          extern void selnl_notify_policyload(u32 seqno);
-          extern void selinux_status_update_policyload(u32 seqno);
-          EOF
+          sed -i 's/void nuke_ext4_sysfs/int nuke_ext4_sysfs/g' drivers/kernelsu/ksud.h
+          sed -i '/ext4_unregister_sysfs/d' drivers/kernelsu/ksud.c
 
       - name: Create KernelSU SELinux Export Stubs
         run: |
