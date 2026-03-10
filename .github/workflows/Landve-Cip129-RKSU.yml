@@ -235,7 +235,6 @@ jobs:
           export SUBARCH=arm64
           export KBUILD_BUILD_USER="Youffx"
           export KBUILD_BUILD_HOST="Builder"
-          export KBUILD_LSB_VERSION=n
           MAKE_FLAGS=(
               ARCH=arm64
               CROSS_COMPILE=aarch64-linux-gnu-
@@ -248,17 +247,13 @@ jobs:
               OBJDUMP=llvm-objdump
               STRIP=llvm-strip
               CLANG_TRIPLE=aarch64-linux-gnu-
-              KBUILD_BUILD_VERSION=1
           )
           
           make O=out "${MAKE_FLAGS[@]}" rosemary_defconfig
-
-          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" Image.gz-dtb dtbs
-
-          if [ ! -f out/arch/arm64/boot/Image.gz-dtb ]; then
-            echo "Image.gz-dtb tidak ditemukan, mencoba penggabungan manual..."
-            cat out/arch/arm64/boot/Image.gz $(find out/arch/arm64/boot/dts/ -name "*.dtb") > out/arch/arm64/boot/Image.gz-dtb
-          fi
+          make -j$(nproc --all) O=out "${MAKE_FLAGS[@]}" Image dtbs
+          
+          gzip -n -c out/arch/arm64/boot/Image > out/arch/arm64/boot/Image.gz
+          cat out/arch/arm64/boot/Image.gz $(find out/arch/arm64/boot/dts/ -name "*.dtb" | head -n 1) > out/arch/arm64/boot/Image.gz-dtb
 
       - name: Upload Image
         uses: actions/upload-artifact@v4
