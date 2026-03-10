@@ -116,6 +116,14 @@ jobs:
               fw_content = fw_content.replace('wrapper_sec->sid = ksu_file_sid;', '/* bypass sid */')
               with open(ksu_fw, 'w') as f:
                   f.write(fw_content)
+          ksu_selinux_defs = 'drivers/kernelsu/selinux/selinux_defs.h'
+          if os.path.exists(ksu_selinux_defs):
+              with open(ksu_selinux_defs, 'r') as f:
+                  sd_content = f.read()
+              sd_content = re.sub(r'#include\s+["<].*objsec\.h[">]', '', sd_content)
+              sd_content = sd_content.replace('return (taskcred_sec_t *)cred->security;', 'return NULL;')
+              with open(ksu_selinux_defs, 'w') as f:
+                  f.write(sd_content)
           EOF
 
       - name: Inject SELinux Headers
