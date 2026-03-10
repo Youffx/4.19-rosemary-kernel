@@ -162,8 +162,9 @@ jobs:
           if os.path.exists(ksu_shim):
               with open(ksu_shim, 'r') as f:
                   s_content = f.read()
-              s_content = re.sub(r'struct\s+security_hook_list\s+ksu_hooks.*?=.*?\{.*?\};', 'struct security_hook_list ksu_hooks[] = {};', s_content, flags=re.DOTALL)
-              s_content = re.sub(r'security_add_hooks\([^)]*\);', '/* bypass */', s_content)
+              s_content = s_content.replace('security_add_hooks', '(void)')
+              if 'struct security_hook_heads security_hook_heads;' not in s_content:
+                  s_content = s_content + '\nstruct security_hook_heads security_hook_heads;\n'
               with open(ksu_shim, 'w') as f:
                   f.write(s_content)
 
