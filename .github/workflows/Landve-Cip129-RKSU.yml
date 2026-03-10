@@ -176,50 +176,6 @@ jobs:
           sed -i 's/void nuke_ext4_sysfs/int nuke_ext4_sysfs/g' drivers/kernelsu/ksud.h
           sed -i '/ext4_unregister_sysfs/d' drivers/kernelsu/ksud.c
 
-      - name: Create KernelSU SELinux Export Stubs
-        run: |
-          mkdir -p drivers/kernelsu/selinux
-          
-          cat > drivers/kernelsu/selinux/compat_exports.c <<'COMPAT_EOF'
-          #include <linux/kernel.h>
-          #include <linux/module.h>
-          
-          extern int hashtab_search(void *h, const void *key, void **datum);
-          extern int hashtab_insert(void *h, const void *key, void *datum);
-          extern int ebitmap_set_bit(void *e, unsigned long bit, int value);
-          extern int ebitmap_get_bit(void *e, unsigned long bit);
-          extern void *avtab_search_node(void *h, void *key);
-          extern void *avtab_search_node_next(void *node, int specified);
-          extern int avtab_insert_nonunique(void *h, void *key, void *datum);
-          extern struct selinux_state selinux_state;
-          extern void avc_ss_reset(u32 seqno);
-          extern void selnl_notify_policyload(u32 seqno);
-          extern void selinux_status_update_policyload(u32 seqno);
-          
-          EXPORT_SYMBOL_GPL(hashtab_search);
-          EXPORT_SYMBOL_GPL(hashtab_insert);
-          EXPORT_SYMBOL_GPL(ebitmap_set_bit);
-          EXPORT_SYMBOL_GPL(ebitmap_get_bit);
-          EXPORT_SYMBOL_GPL(avtab_search_node);
-          EXPORT_SYMBOL_GPL(avtab_search_node_next);
-          EXPORT_SYMBOL_GPL(avtab_insert_nonunique);
-          EXPORT_SYMBOL_GPL(selinux_state);
-          EXPORT_SYMBOL_GPL(avc_ss_reset);
-          EXPORT_SYMBOL_GPL(selnl_notify_policyload);
-          EXPORT_SYMBOL_GPL(selinux_status_update_policyload);
-          COMPAT_EOF
-
-      - name: Update KernelSU Makefile for Exports
-        run: |
-          MAKEFILE="drivers/kernelsu/Makefile"
-          
-          if [ -f "$MAKEFILE" ]; then
-            if ! grep -q "compat_exports.o" "$MAKEFILE"; then
-              echo "" >> "$MAKEFILE"
-              echo "kernelsu-y += selinux/compat_exports.o" >> "$MAKEFILE"
-            fi
-          fi
-
       - name: Build Kernel
         run: |
           export PATH="${{ github.workspace }}/clang/bin:$PATH"
