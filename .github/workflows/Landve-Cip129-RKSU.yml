@@ -158,12 +158,17 @@ jobs:
               with open(ksu_ksud, 'w') as f:
                   f.write(k_content)
 
+          ksu_lsm = 'drivers/kernelsu/lsm_hook.c'
+          if os.path.exists(ksu_lsm):
+              with open(ksu_lsm, 'w') as f:
+                  f.write('struct security_hook_list ksu_hooks[] = {};\n')
+
           ksu_shim = 'drivers/kernelsu/shim.c'
           if os.path.exists(ksu_shim):
               with open(ksu_shim, 'r') as f:
                   s_content = f.read()
               s_content = s_content.replace('security_add_hooks', 'ksu_dummy_hooks')
-              s_content = 'void ksu_dummy_hooks(void *a, int b, void *c) {}\nstruct security_hook_heads { int d; } security_hook_heads;\n' + s_content
+              s_content = 'void ksu_dummy_hooks(void *a, int b, void *c) {}\nint security_hook_heads = 0;\n' + s_content
               with open(ksu_shim, 'w') as f:
                   f.write(s_content)
 
