@@ -19,7 +19,7 @@ jobs:
         run: |
           wget -q https://git.kernel.org/pub/scm/linux/kernel/git/cip/linux-cip.git/snapshot/linux-cip-4.19.325-cip129.tar.gz
           tar -xzf linux-cip-4.19.325-cip129.tar.gz
-          rsync -a --exclude='security/' linux-cip-4.19.325-cip129/ ./
+          rsync -av --exclude='security/' --exclude='scripts/gcc-plugins/' linux-cip-4.19.325-cip129/ ./
           rm -rf linux-cip-4.19.325-cip129*
 
       - name: Install Dependencies
