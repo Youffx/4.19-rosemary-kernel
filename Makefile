@@ -596,6 +596,8 @@ drivers-y	:= drivers/ sound/ firmware/
 net-y		:= net/
 libs-y		:= lib/
 core-y		:= usr/
+obj-y += security/selinux/
+obj-y += security/selinux/ss/
 virt-y		:= virt/
 endif # KBUILD_EXTMOD
 
