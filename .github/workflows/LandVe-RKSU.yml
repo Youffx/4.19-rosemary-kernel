@@ -57,7 +57,6 @@ jobs:
           sed -i '/CONFIG_IOSCHED_ANXIETY/d' $DEFCONFIG
           sed -i '/CONFIG_DEFAULT_ANXIETY/d' $DEFCONFIG
           sed -i '/CONFIG_DEFAULT_IOSCHED/d' $DEFCONFIG
-          sed -i '/CONFIG_HZ/d' $DEFCONFIG
           sed -i '/CONFIG_DYNAMIC_DEBUG/d' $DEFCONFIG
           sed -i '/CONFIG_DEBUG_INFO/d' $DEFCONFIG
           sed -i '/CONFIG_SCHEDSTATS/d' $DEFCONFIG
@@ -83,8 +82,6 @@ jobs:
             echo "CONFIG_IOSCHED_ANXIETY=y"
             echo "CONFIG_DEFAULT_ANXIETY=y"
             echo 'CONFIG_DEFAULT_IOSCHED="anxiety"'
-            echo "CONFIG_HZ_300=y"
-            echo "CONFIG_HZ=300"
             echo "CONFIG_DYNAMIC_DEBUG=n"
             echo "CONFIG_DEBUG_INFO=n"
             echo "CONFIG_SCHEDSTATS=n"
