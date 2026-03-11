@@ -30,7 +30,7 @@ jobs:
 
       - name: Apply I/O Scheduler Patch (Anxiety)
         run: |
-          wget https://github.com/Youffx/4.19-rosemary-kernel/blob/main/.github/patch/anxiety.patch -O anxiety.patch
+          wget https://raw.githubusercontent.com/Youffx/4.19-rosemary-kernel/main/.github/patch/anxiety.patch -O anxiety.patch
           patch -p1 < anxiety.patch
 
       - name: Setup RKSU
