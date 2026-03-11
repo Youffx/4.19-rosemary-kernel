@@ -41,24 +41,53 @@ jobs:
       - name: Modifikasi Defconfig
         run: |
           DEFCONFIG="arch/arm64/configs/rosemary_defconfig"
-          
+
           sed -i '/CONFIG_KSU/d' $DEFCONFIG
           sed -i '/CONFIG_KPROBES/d' $DEFCONFIG
           sed -i '/CONFIG_LOCALVERSION/d' $DEFCONFIG
           sed -i '/CONFIG_EROFS_FS/d' $DEFCONFIG
           sed -i '/CONFIG_SDCARD_FS/d' $DEFCONFIG
-          
+          sed -i '/CONFIG_LZ4_COMPRESS/d' $DEFCONFIG
+          sed -i '/CONFIG_LZ4HC_COMPRESS/d' $DEFCONFIG
+          sed -i '/CONFIG_IOSCHED_ANXIETY/d' $DEFCONFIG
+          sed -i '/CONFIG_DEFAULT_ANXIETY/d' $DEFCONFIG
+          sed -i '/CONFIG_DEFAULT_IOSCHED/d' $DEFCONFIG
+          sed -i '/CONFIG_HZ/d' $DEFCONFIG
+          sed -i '/CONFIG_DYNAMIC_DEBUG/d' $DEFCONFIG
+          sed -i '/CONFIG_DEBUG_INFO/d' $DEFCONFIG
+          sed -i '/CONFIG_SCHEDSTATS/d' $DEFCONFIG
+          sed -i '/CONFIG_ENABLE_DEFAULT_TRACERS/d' $DEFCONFIG
+          sed -i '/CONFIG_SND_DEBUG/d' $DEFCONFIG
+          sed -i '/CONFIG_SND_DEBUG_VERBOSE/d' $DEFCONFIG
+          sed -i '/CONFIG_SND_PCM_XRUN_DEBUG/d' $DEFCONFIG
+          sed -i '/CONFIG_MTK_SCHED_TRACERS/d' $DEFCONFIG
+
           {
             echo "CONFIG_KSU=y"
             echo "CONFIG_KSU_MANUAL_HOOK=y"
-            echo "# CONFIG_KPROBES is not set"
+            echo "CONFIG_KPROBES=n"
             echo "CONFIG_EROFS_FS=y"
             echo "CONFIG_EROFS_FS_ZIP=y"
             echo "CONFIG_EROFS_FS_POSIX_ACL=y"
             echo "CONFIG_EROFS_FS_SECURITY=y"
             echo "CONFIG_SDCARD_FS=y"
-            echo 'CONFIG_LOCALVERSION="-LandVe🌵/Cactus"'
+            echo 'CONFIG_LOCALVERSION="-LandVe🍋‍🟩/Lime"'
             echo "CONFIG_LOCALVERSION_AUTO=n"
+            echo "CONFIG_LZ4_COMPRESS=y"
+            echo "CONFIG_LZ4HC_COMPRESS=y"
+            echo "CONFIG_IOSCHED_ANXIETY=y"
+            echo "CONFIG_DEFAULT_ANXIETY=y"
+            echo 'CONFIG_DEFAULT_IOSCHED="anxiety"'
+            echo "CONFIG_HZ_300=y"
+            echo "CONFIG_HZ=300"
+            echo "CONFIG_DYNAMIC_DEBUG=n"
+            echo "CONFIG_DEBUG_INFO=n"
+            echo "CONFIG_SCHEDSTATS=n"
+            echo "CONFIG_ENABLE_DEFAULT_TRACERS=n"
+            echo "CONFIG_SND_DEBUG=n"
+            echo "CONFIG_SND_DEBUG_VERBOSE=n"
+            echo "CONFIG_SND_PCM_XRUN_DEBUG=n"
+            echo "CONFIG_MTK_SCHED_TRACERS=n"
           } >> $DEFCONFIG
 
       - name: Build Kernel
