@@ -18,6 +18,7 @@ unexpected behavior.
  create mode 100644 block/anxiety-iosched.c
 
 diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
+index af3d6a3..1234567 100644
 --- a/block/Kconfig.iosched
 +++ b/block/Kconfig.iosched
 @@ -32,6 +32,12 @@
