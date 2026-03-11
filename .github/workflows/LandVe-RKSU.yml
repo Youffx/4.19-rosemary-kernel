@@ -49,9 +49,6 @@ jobs:
           sed -i '/CONFIG_SDCARD_FS/d' $DEFCONFIG
           sed -i '/CONFIG_LZ4_COMPRESS/d' $DEFCONFIG
           sed -i '/CONFIG_LZ4HC_COMPRESS/d' $DEFCONFIG
-          sed -i '/CONFIG_IOSCHED_ANXIETY/d' $DEFCONFIG
-          sed -i '/CONFIG_DEFAULT_ANXIETY/d' $DEFCONFIG
-          sed -i '/CONFIG_DEFAULT_IOSCHED/d' $DEFCONFIG
           sed -i '/CONFIG_DYNAMIC_DEBUG/d' $DEFCONFIG
           sed -i '/CONFIG_DEBUG_INFO/d' $DEFCONFIG
           sed -i '/CONFIG_SCHEDSTATS/d' $DEFCONFIG
@@ -74,9 +71,6 @@ jobs:
             echo "CONFIG_LOCALVERSION_AUTO=n"
             echo "CONFIG_LZ4_COMPRESS=y"
             echo "CONFIG_LZ4HC_COMPRESS=y"
-            echo "CONFIG_IOSCHED_ANXIETY=y"
-            echo "CONFIG_DEFAULT_ANXIETY=y"
-            echo 'CONFIG_DEFAULT_IOSCHED="anxiety"'
             echo "CONFIG_DYNAMIC_DEBUG=n"
             echo "CONFIG_DEBUG_INFO=n"
             echo "CONFIG_SCHEDSTATS=n"
