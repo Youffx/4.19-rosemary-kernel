@@ -16,6 +16,11 @@ jobs:
           ref: 4.19-Beta-cip-129
           fetch-depth: 1
 
+      - name: Show Branch
+        run: |
+          git branch
+          git log --oneline -n 5
+
       - name: Install Dependencies
         run: |
           sudo apt-get update -y
@@ -58,7 +63,7 @@ jobs:
             echo "CONFIG_EROFS_FS_POSIX_ACL=y"
             echo "CONFIG_EROFS_FS_SECURITY=y"
             echo "CONFIG_SDCARD_FS=y"
-            echo 'CONFIG_LOCALVERSION="-LandVe🌵/Cactus"'
+            echo 'CONFIG_LOCALVERSION="-LandVe🍋‍🟩/Lime"'
             echo "CONFIG_LOCALVERSION_AUTO=n"
           } >> $DEFCONFIG
 
